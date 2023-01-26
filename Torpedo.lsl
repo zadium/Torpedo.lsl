@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-01-27 00:34:45"
-    @revision: 469
+    @updated: "2023-01-27 01:29:51"
+    @revision: 543
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -14,16 +14,20 @@
     @notice:
 */
 
-float InitVelocity = 15; //meters / second.
-float Velocity = 10; //meters / second.
-float CurrentVelocity = 0; //meters / second.
+float InitVelocity = 15;
+float HighVelocity = 5;
+float Velocity = 5;
+float CurrentVelocity = 0;
 float gravity = 0.0;
 float sensor_range = 100;
 integer steps =10;
+key target = NULL_KEY;
+integer target_owner = TRUE; //* for testing
 
-follow(key target){
+follow()
+{
     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-    llRotLookAt(llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos())), 1.0, 0.4);
+    llRotLookAt(llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos())), 1, 0.4);
 }
 
 playsoundExplode()
@@ -60,10 +64,10 @@ shoot()
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
     //llSetVehicleType(VEHICLE_TYPE_SLED);
-    //llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE);
+    llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, FALSE);
     //llSetStatus(STATUS_ROTATE_X | STATUS_ROTATE_Z | STATUS_ROTATE_Y, FALSE);
     //llSetBuoyancy(0);
-    llSetPhysicsMaterial(GRAVITY_MULTIPLIER, gravity,0,0,0);
+    llSetPhysicsMaterial(GRAVITY_MULTIPLIER, gravity ,0,0,0);
 
     //llSetVehicleVectorParam(VEHICLE_ANGULAR_MOTOR_DIRECTION, <0, 0, 0>);
     //llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_DIRECTION, <0, 0, 0>);
@@ -74,10 +78,9 @@ shoot()
     stateTorpedo = steps;
 
     playsoundLaunch();
-    llSetTimerEvent(1);
     CurrentVelocity = Velocity;
     push(InitVelocity);
-    //llSensor("", NULL_KEY, AGENT, sensor_range, PI);
+    llSetTimerEvent(1);
 }
 
 stop()
@@ -110,7 +113,6 @@ default
         oldRot = llGetRot();
         init();
         stateTorpedo = 0;
-        llSensorRepeat("", NULL_KEY, PASSIVE | ACTIVE, sensor_range, 2 * PI, 1);
     }
 
     on_rez(integer number)
@@ -131,49 +133,53 @@ default
 
     touch_start(integer num_detected)
     {
-        llSensorRepeat("", NULL_KEY, PASSIVE | ACTIVE, sensor_range, 2 * PI, 1);
         if (llDetectedKey(0) == llGetOwner())
         {
-          //  shoot();
+            shoot();
         }
     }
 
     sensor( integer number_detected )
     {
-        if (number_detected > 0)
+        if (stateTorpedo>0)
         {
-            follow(llDetectedKey(0));
-            if (stateTorpedo>0)
+            while (number_detected>0)
             {
-                //llOwnerSay(llDetectedName(0));
-                CurrentVelocity = InitVelocity;
-                follow(llDetectedKey(0));
+                llOwnerSay((string)(number_detected));
+                number_detected--;
+                key k = llDetectedKey(number_detected);
+                key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
+                if (target_owner || (owner != NULL_KEY && owner != llGetOwner()))
+                {
+                    target = k;
+                    //llOwnerSay("lucked: " + llKey2Name(target));
+                    llSensorRemove();
+                    CurrentVelocity = HighVelocity;
+                    follow();
+                    return;
+                }
             }
         }
     }
 
     timer()
     {
-        stateTorpedo--;
         if (stateTorpedo == 0)
         {
             llSetTimerEvent(0);
             stop();
         }
-        if (stateTorpedo < 1) //* stop engine
-        {
-            //llSetStatus(STATUS_ROTATE_X | STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE);
-            //llSetVehicleType(VEHICLE_TYPE_SLED);
-            //llSetForce(<-0.1, 0, 0.0>, TRUE);
-            //llSetBuoyancy(0);
-        }
-        else if (stateTorpedo == steps - 1)
-        {
-            llSensorRepeat("", NULL_KEY, PASSIVE | ACTIVE, sensor_range, 2 * PI, 1);
-        }
         else
         {
+            if (stateTorpedo == steps)
+            {
+                llSensorRepeat("", NULL_KEY, PASSIVE | ACTIVE, sensor_range, 2 * PI, 1);
+                llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE);
+            }
+            if (target!=NULL_KEY)
+                follow();
             push(CurrentVelocity);
+            stateTorpedo--;
         }
     }
 }
