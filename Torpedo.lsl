@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-01-27 00:24:37"
-    @revision: 460
+    @updated: "2023-01-27 00:34:45"
+    @revision: 469
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -23,19 +23,7 @@ integer steps =10;
 
 follow(key target){
     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-    vector center = llGetPos();
-    vector new_pos = (target_pos - center) * llEuler2Rot(<-PI/2, 0 , PI/2>) + center;
-    llLookAt(new_pos, 3.0, 1);
-    //llLookAt(target_pos, 3.0, 1);
-    vector pos = llGetPos();
-    rotation rot = llGetRot();
-    //llLookAt(target_pos * PI*2, 0.5, 0.4);
-    //llRotLookAt(llRotBetween(pos, target_pos), 0.5, 0.4);
-    //llMoveToTarget(target_pos, 1);
-    //llRotLookAt(llRotBetween(<-1.0, 0.0, 0.0>, llVecNorm(pos - target_pos)), 1.0, 0.4);
-    //llRotLookAt(llRotBetween(<1, 1, 0>, llVecNorm(target_pos - pos)), 0.5, 0.4);
-    //llRotLookAt(llRotBetween(<1, 1, 0>, llVecNorm(target_pos - pos)), 0.5, 0.4);
-    //llRotLookAt(rot * llRotBetween(<1, 1, 1> * rot, target_pos - pos), 1.0, 0.4);
+    llRotLookAt(llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos())), 1.0, 0.4);
 }
 
 playsoundExplode()
