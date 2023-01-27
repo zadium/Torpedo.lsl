@@ -4,25 +4,30 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-01-27 14:41:29"
-    @revision: 627
+    @updated: "2023-01-27 16:50:17"
+    @revision: 705
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
     @ref:
        https://wiki.secondlife.com/wiki/LlRotBetween
 
+    @resources
+       https://soundbible.com/1793-Flashbang.html
+
     @notice:
 */
 
 //* settings
 integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
+float WaterOffset = 0; //* if you want torpedo pull his face out of water a little
 
-float InitVelocity = 15;
-float HighVelocity = 5;
+float InitVelocity = 5;
+//float HighVelocity = 5;
 float Velocity = 4;
+float LowVelocity = 4;
 float SensorRange = 100;
-integer Life = 10; //* life in seconds
+integer Life = 20; //* life in seconds
 integer Targeting = 1;
 
 integer TARGET_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -46,12 +51,17 @@ playsoundLaunch()
     llPlaySound("TorpedoLaunch", 1.0);
 }
 
-explode()
+stop(integer explode)
 {
     target = NULL_KEY;
     integer number = (integer)llGetObjectDesc();
     llSetStatus(STATUS_PHYSICS, FALSE);
-    playsoundExplode();
+
+    if (explode)
+    {
+        playsoundExplode();
+    }
+
     llSleep(0.5);
     if (testing)
         spawn();
@@ -59,32 +69,55 @@ explode()
         llDie();
 }
 
+vector getPos(key k)
+{
+    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+    if (Torpedo)
+    {
+        vector bottom = llList2Vector(llGetBoundingBox(target), 1); //* get the bottom of object, not center of object
+           target_pos.z -= bottom.z;
+    }
+    return target_pos;
+}
+
 follow()
 {
+//    vector target_pos = getPos(target);
     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
 
     if (Torpedo)
     {
-        float water = llWater(ZERO_VECTOR);
+        float water = llWater(ZERO_VECTOR) + WaterOffset;
         if (target_pos.z > water)
         {
-            target_pos.z = water + 0.1; //* shifting it above, good to have it over water a little
+            target_pos.z = water; //* shifting it above, good to have it over water a little
         }
     }
-
-    llRotLookAt(llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos())), 1, 0.4);
+    rotation rot = llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos()));
+    llRotLookAt(rot, 0.5, 0.5);
 }
 
 integer stateTorpedo = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 
-push(float vel)
+push()
 {
     vector v = <1, 0, 0>;
-    v =  v * vel * llGetMass();
-    //llSetForce(v, TRUE);
+    v =  v * current_velocity * llGetMass();
+    llSetForce(v, TRUE);
     llApplyImpulse(v, TRUE);
+}
+
+sence()
+{
+    integer flags = AGENT;
+    if (Targeting==TARGET_PHYSIC)
+        flags = ACTIVE | PASSIVE;
+    else if (Targeting==TARGET_SCRIPTED)
+        flags = ACTIVE | SCRIPTED;
+
+    llSensorRepeat("", NULL_KEY, flags, SensorRange, 2 * PI, 1);
 }
 
 shoot()
@@ -150,8 +183,9 @@ shoot()
     stateTorpedo = Life;
 
     playsoundLaunch();
-    current_velocity = Velocity;
-    push(InitVelocity);
+    current_velocity = InitVelocity;
+    push();
+    sence();
     llSetTimerEvent(1);
 }
 
@@ -248,11 +282,20 @@ default
                         }
                     }
 
+
+                    if (Torpedo)
+                    {
+                        vector target_pos = getPos(target);
+                        float water = llWater(ZERO_VECTOR) + WaterOffset;
+                        if (target_pos.z > water)
+                            target = NULL_KEY; //* nop it is not under water
+                    }
+
                     if (target!=NULL_KEY)
                     {
                         llOwnerSay("locked: " + llKey2Name(target));
                         llSensorRemove();
-                        current_velocity = HighVelocity;
+//                        current_velocity = HighVelocity;
                         follow();
                         return;
                     }
@@ -268,7 +311,7 @@ default
             {
                 stateTorpedo = 0;
                 llSetTimerEvent(0);
-                explode();
+                stop(TRUE);
             }
     }
 
@@ -278,26 +321,23 @@ default
         if (stateTorpedo == 0)
         {
             llSetTimerEvent(0);
-            explode();
+            stop(FALSE);
         }
         else
         {
             if (stateTorpedo == Life) //* first pulse, we skipped first one to let torpedo get good position after launch
             {
-
-                integer flags = AGENT;
-                if (Targeting==TARGET_PHYSIC)
-                    flags = ACTIVE;
-                else if (Targeting==TARGET_SCRIPTED)
-                    flags = ACTIVE | SCRIPTED;
-
-                llSensorRepeat("", NULL_KEY, flags, SensorRange, 2 * PI, 1);
                 llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
             }
 
             if (target!=NULL_KEY)
                 follow();
-            push(current_velocity);
+
+            if (stateTorpedo < 4)
+                current_velocity = LowVelocity;
+            else
+                current_velocity = Velocity;
+            push();
             stateTorpedo--;
         }
     }
