@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.0
-    @updated: "2023-01-27 21:16:35"
-    @revision: 715
+    @version: 1.19
+    @updated: "2023-01-28 00:19:35"
+    @revision: 797
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -21,20 +21,27 @@
 //* settings
 integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0; //* if you want torpedo pull his face out of water a little
+float Shock=500; //* power to push the target object on collide
 
-float InitVelocity = 5;
+//* for Torpedo
+float TorpedoInitVelocity = 2;
+float RocketInitVelocity = 10;
 float LockVelocity = 5;
-float Velocity = 4;
-float LowVelocity = 4;
+float Velocity = 1;
+float LowVelocity = 0.5;
+
+integer Life = 30; //* life in seconds
+
 float SensorRange = 100;
-integer Life = 20; //* life in seconds
-integer Targeting = 1;
+
+integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_AGENT = 0;  //* agent on object, avatar should sitting on object
 integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* Internal variables
+vector ObjectFace = <1, 0, 0>;
 //float current_velocity = 0;
 float gravity = 0.0;
 key target = NULL_KEY;
@@ -51,30 +58,85 @@ playsoundLaunch()
     llPlaySound("TorpedoLaunch", 1.0);
 }
 
-stop(integer explode)
+explode()
 {
-    target = NULL_KEY;
+    if (Shock>0)
+    {
+        vector v = ObjectFace;
+        v =  v * Shock;
+        llPushObject(target, v, ObjectFace, TRUE);
+    }
+
+    playsoundExplode();
+    llParticleSystem([
+       PSYS_PART_FLAGS,
+            PSYS_PART_INTERP_SCALE_MASK
+            //| PSYS_PART_FOLLOW_VELOCITY_MASK
+//            | PSYS_PART_INTERP_COLOR_MASK
+            | PSYS_PART_EMISSIVE_MASK
+            //| PSYS_PART_RIBBON_MASK
+            | PSYS_PART_WIND_MASK
+            ,
+        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
+        PSYS_SRC_TEXTURE, "Fire",
+
+        //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
+        PSYS_SRC_BURST_RATE,        0.1,
+        PSYS_SRC_BURST_PART_COUNT,  25,
+
+        PSYS_SRC_ANGLE_BEGIN,       -PI,
+        PSYS_SRC_ANGLE_END,         PI,
+
+        PSYS_PART_START_COLOR,      <5,5,5>,
+        PSYS_PART_END_COLOR,        <1,1,1>,
+
+        PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
+        PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
+
+        PSYS_SRC_BURST_SPEED_MIN,     0.1,
+        PSYS_SRC_BURST_SPEED_MAX,     0.2,
+
+        PSYS_SRC_BURST_RADIUS,      0.5,
+        PSYS_SRC_MAX_AGE,           2,
+        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.5>,
+
+        PSYS_SRC_OMEGA,             <0.0, 0.0, 0.2>,
+
+        PSYS_PART_MAX_AGE,          3,
+
+        PSYS_PART_START_GLOW,       0.1,
+        PSYS_PART_END_GLOW,         0.0,
+
+        PSYS_PART_START_ALPHA,      0.5,
+        PSYS_PART_END_ALPHA,        1
+
+    ]);
+}
+
+stop(integer explode_it)
+{
     integer number = (integer)llGetObjectDesc();
     llSetStatus(STATUS_PHYSICS, FALSE);
 
-    if (explode)
+    if (explode_it)
     {
-        playsoundExplode();
+        explode();
     }
 
+    target = NULL_KEY;
     llSleep(0.5);
     if (testing)
-        spawn();
+        respawn();
     else
         llDie();
 }
 
 vector getPos(key k)
 {
-    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+    vector target_pos = llList2Vector(llGetObjectDetails(k, [OBJECT_POS]), 0);
     if (Torpedo)
     {
-        vector bottom = llList2Vector(llGetBoundingBox(target), 1); //* get the bottom of object, not center of object
+        vector bottom = llList2Vector(llGetBoundingBox(k), 1); //* get the bottom of object, not center of object
            target_pos.z -= bottom.z;
     }
     return target_pos;
@@ -97,15 +159,36 @@ follow()
     llRotLookAt(rot, 0.5, 0.5);
 }
 
+lockAvatar(key k)
+{
+    integer info = llGetAgentInfo(k);
+    if (info & AGENT_ON_OBJECT)
+    {
+        //* TODO: can we get the root of agent, mean the object sitting on it
+        key root = llList2Key(llGetObjectDetails(k, [LINK_ROOT]), 0);
+        if (root != NULL_KEY)
+            target = root;
+        else
+            target = k;
+    }
+    else
+        target = k;
+
+    llOwnerSay("Locked: " + llKey2Name(target));
+    follow();
+    llSleep(0.1);
+    shoot();
+}
+
 integer stateTorpedo = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 
 push(float vel)
 {
-    vector v = <1, 0, 0>;
+    vector v = ObjectFace;
     v =  v * vel * llGetMass();
-    llSetForce(v, TRUE);
+    //llSetForce(v, TRUE);
     llApplyImpulse(v, TRUE);
 }
 
@@ -176,19 +259,23 @@ shoot()
 
     //llSetVehicleVectorParam(VEHICLE_ANGULAR_MOTOR_DIRECTION, <0, 0, 0>);
     //llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_DIRECTION, <0, 0, 0>);
-    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, <1, 0, 0>);
+    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, ObjectFace);
 
     llSetStatus(STATUS_PHYSICS, TRUE);
 
     stateTorpedo = Life;
 
     playsoundLaunch();
-    push(InitVelocity);
-    sence();
+    if (Torpedo)
+        push(TorpedoInitVelocity);
+    else
+        push(RocketInitVelocity);
+    if (target==NULL_KEY)
+        sence();
     llSetTimerEvent(1);
 }
 
-spawn()
+respawn()
 {
     llSetTimerEvent(0);
     llSetStatus(STATUS_PHYSICS, FALSE);
@@ -213,6 +300,27 @@ init()
     testing = FALSE;
 }
 
+key getAviKey(string avi_name)
+{
+    avi_name = llToLower(avi_name);
+    integer len = llStringLength(avi_name);
+    list avatars = llGetAgentList(AGENT_LIST_PARCEL, []);
+    integer count = llGetListLength(avatars);
+
+    integer index;
+    string name;
+    key id;
+    while (index < count)
+    {
+        id = llList2Key(avatars, index);
+        name = llGetSubString(llToLower(llKey2Name(id)), 0, len - 1);
+        if ((name == avi_name) && (!osIsNpc(id)))
+            return id;
+        ++index;
+    }
+    return NULL_KEY;
+}
+
 default
 {
     state_entry()
@@ -221,6 +329,9 @@ default
         oldRot = llGetRot();
         init();
         stateTorpedo = 0;
+        integer number = (integer)llGetObjectDesc();
+        if (number==0)
+            llListen(0, "", llGetOwner(), "");
     }
 
     on_rez(integer number)
@@ -244,6 +355,7 @@ default
         if (llDetectedKey(0) == llGetOwner())
         {
             testing = TRUE;
+            //explode();
             shoot();
         }
     }
@@ -292,9 +404,11 @@ default
 
                     if (target!=NULL_KEY)
                     {
-                        llOwnerSay("locked: " + llKey2Name(target));
+                        llOwnerSay("Locked: " + llKey2Name(target));
+                        llRegionSayTo(owner, 0, "YOU ARE LOCKED");
                         llSensorRemove();
                         follow();
+                        llSleep(0.1);
                         push(LockVelocity);
                         llSetTimerEvent(1);//* make sure next push after 1 second
                         return;
@@ -340,6 +454,25 @@ default
                 vel = Velocity;
             push(vel);
             stateTorpedo--;
+        }
+    }
+
+    listen(integer channel, string name, key id, string message)
+    {
+        if (((channel == 0) || (channel == 1)) && (id == llGetOwner()))
+        {
+            string lockTo = "lock";
+
+            if (llGetSubString(llToLower(message), 0, llStringLength(lockTo)-1) == lockTo)
+            {
+                string avi_name = llStringTrim(llGetSubString(message, llStringLength(lockTo), -1), STRING_TRIM);
+                key avi_key = getAviKey(avi_name);
+                if (avi_key != NULL_KEY) {
+                    lockAvatar(avi_key);
+                }
+                else
+                    llOwnerSay("No avatar: " + avi_name);
+            }
         }
     }
 }
