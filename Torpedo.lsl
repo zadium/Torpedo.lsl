@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-01-27 16:50:17"
-    @revision: 705
+    @updated: "2023-01-27 21:16:35"
+    @revision: 715
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -23,7 +23,7 @@ integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0; //* if you want torpedo pull his face out of water a little
 
 float InitVelocity = 5;
-//float HighVelocity = 5;
+float LockVelocity = 5;
 float Velocity = 4;
 float LowVelocity = 4;
 float SensorRange = 100;
@@ -35,7 +35,7 @@ integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* Internal variables
-float current_velocity = 0;
+//float current_velocity = 0;
 float gravity = 0.0;
 key target = NULL_KEY;
 integer target_owner = TRUE; //* for testing
@@ -101,10 +101,10 @@ integer stateTorpedo = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 
-push()
+push(float vel)
 {
     vector v = <1, 0, 0>;
-    v =  v * current_velocity * llGetMass();
+    v =  v * vel * llGetMass();
     llSetForce(v, TRUE);
     llApplyImpulse(v, TRUE);
 }
@@ -183,8 +183,7 @@ shoot()
     stateTorpedo = Life;
 
     playsoundLaunch();
-    current_velocity = InitVelocity;
-    push();
+    push(InitVelocity);
     sence();
     llSetTimerEvent(1);
 }
@@ -295,8 +294,9 @@ default
                     {
                         llOwnerSay("locked: " + llKey2Name(target));
                         llSensorRemove();
-//                        current_velocity = HighVelocity;
                         follow();
+                        push(LockVelocity);
+                        llSetTimerEvent(1);//* make sure next push after 1 second
                         return;
                     }
                 }
@@ -333,11 +333,12 @@ default
             if (target!=NULL_KEY)
                 follow();
 
+            float vel;
             if (stateTorpedo < 4)
-                current_velocity = LowVelocity;
+                vel = LowVelocity;
             else
-                current_velocity = Velocity;
-            push();
+                vel = Velocity;
+            push(vel);
             stateTorpedo--;
         }
     }
