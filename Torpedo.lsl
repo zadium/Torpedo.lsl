@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.24
-    @updated: "2023-01-28 00:40:18"
-    @revision: 797
+    @version: 1.19
+    @updated: "2023-01-28 00:47:48"
+    @revision: 799
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -21,7 +21,7 @@
 //* settings
 integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0; //* if you want torpedo pull his face out of water a little
-float Shock=5000; //* power to push the target object on collide
+float Shock=500; //* power to push the target object on collide
 
 //* for Torpedo
 float TorpedoInitVelocity = 2;
@@ -126,7 +126,7 @@ stop(integer explode_it)
     target = NULL_KEY;
     llSleep(0.5);
     if (testing)
-        spawn();
+        respawn();
     else
         llDie();
 }
@@ -159,6 +159,27 @@ follow()
     llRotLookAt(rot, 0.5, 0.5);
 }
 
+lockAvatar(key k)
+{
+    integer info = llGetAgentInfo(k);
+    if (info & AGENT_ON_OBJECT)
+    {
+        //* TODO: can we get the root of agent, mean the object sitting on it
+        key root = llList2Key(llGetObjectDetails(k, [LINK_ROOT]), 0);
+        if (root != NULL_KEY)
+            target = root;
+        else
+            target = k;
+    }
+    else
+        target = k;
+
+    llOwnerSay("Locked: " + llKey2Name(target));
+    follow();
+    llSleep(0.1);
+    shoot();
+}
+
 integer stateTorpedo = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
@@ -166,6 +187,7 @@ rotation oldRot;
 push(float vel)
 {
     vector v = ObjectFace;
+    v =  v * vel * llGetMass();
 
     if (Torpedo) //* checking if it above water
     {
@@ -175,7 +197,6 @@ push(float vel)
             v.z = -0.3;
     }
 
-    v =  v * vel * llGetMass();
     //llSetForce(v, TRUE);
     llApplyImpulse(v, TRUE);
 }
@@ -258,11 +279,12 @@ shoot()
         push(TorpedoInitVelocity);
     else
         push(RocketInitVelocity);
-    sence();
+    if (target==NULL_KEY)
+        sence();
     llSetTimerEvent(1);
 }
 
-spawn()
+respawn()
 {
     llSetTimerEvent(0);
     llSetStatus(STATUS_PHYSICS, FALSE);
@@ -287,6 +309,27 @@ init()
     testing = FALSE;
 }
 
+key getAviKey(string avi_name)
+{
+    avi_name = llToLower(avi_name);
+    integer len = llStringLength(avi_name);
+    list avatars = llGetAgentList(AGENT_LIST_PARCEL, []);
+    integer count = llGetListLength(avatars);
+
+    integer index;
+    string name;
+    key id;
+    while (index < count)
+    {
+        id = llList2Key(avatars, index);
+        name = llGetSubString(llToLower(llKey2Name(id)), 0, len - 1);
+        if ((name == avi_name) && (!osIsNpc(id)))
+            return id;
+        ++index;
+    }
+    return NULL_KEY;
+}
+
 default
 {
     state_entry()
@@ -295,6 +338,9 @@ default
         oldRot = llGetRot();
         init();
         stateTorpedo = 0;
+        integer number = (integer)llGetObjectDesc();
+        if (number==0)
+            llListen(0, "", llGetOwner(), "");
     }
 
     on_rez(integer number)
@@ -417,6 +463,25 @@ default
                 vel = Velocity;
             push(vel);
             stateTorpedo--;
+        }
+    }
+
+    listen(integer channel, string name, key id, string message)
+    {
+        if (((channel == 0) || (channel == 1)) && (id == llGetOwner()))
+        {
+            string lockTo = "lock";
+
+            if (llGetSubString(llToLower(message), 0, llStringLength(lockTo)-1) == lockTo)
+            {
+                string avi_name = llStringTrim(llGetSubString(message, llStringLength(lockTo), -1), STRING_TRIM);
+                key avi_key = getAviKey(avi_name);
+                if (avi_key != NULL_KEY) {
+                    lockAvatar(avi_key);
+                }
+                else
+                    llOwnerSay("No avatar: " + avi_name);
+            }
         }
     }
 }
