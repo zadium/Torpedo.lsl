@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-01-27 03:23:41"
-    @revision: 592
+    @updated: "2023-01-27 14:41:29"
+    @revision: 627
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -15,22 +15,26 @@
     @notice:
 */
 
+//* settings
+integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
+
 float InitVelocity = 15;
 float HighVelocity = 5;
-float Velocity = 5;
-float CurrentVelocity = 0;
+float Velocity = 4;
+float SensorRange = 100;
+integer Life = 10; //* life in seconds
+integer Targeting = 1;
+
+integer TARGET_AGENT = 0;  //* agent on object, avatar should sitting on object
+integer TARGET_PHYSIC = 1;  //* physic objects
+integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
+
+//* Internal variables
+float current_velocity = 0;
 float gravity = 0.0;
-float sensor_range = 100;
-integer steps =30; //* life in seconds
 key target = NULL_KEY;
 integer target_owner = TRUE; //* for testing
 integer testing = FALSE;
-
-follow()
-{
-    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-    llRotLookAt(llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos())), 1, 0.4);
-}
 
 playsoundExplode()
 {
@@ -44,9 +48,31 @@ playsoundLaunch()
 
 explode()
 {
+    target = NULL_KEY;
     integer number = (integer)llGetObjectDesc();
     llSetStatus(STATUS_PHYSICS, FALSE);
     playsoundExplode();
+    llSleep(0.5);
+    if (testing)
+        spawn();
+    else
+        llDie();
+}
+
+follow()
+{
+    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+
+    if (Torpedo)
+    {
+        float water = llWater(ZERO_VECTOR);
+        if (target_pos.z > water)
+        {
+            target_pos.z = water + 0.1; //* shifting it above, good to have it over water a little
+        }
+    }
+
+    llRotLookAt(llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos())), 1, 0.4);
 }
 
 integer stateTorpedo = 0;
@@ -121,15 +147,15 @@ shoot()
 
     llSetStatus(STATUS_PHYSICS, TRUE);
 
-    stateTorpedo = steps;
+    stateTorpedo = Life;
 
     playsoundLaunch();
-    CurrentVelocity = Velocity;
+    current_velocity = Velocity;
     push(InitVelocity);
     llSetTimerEvent(1);
 }
 
-stop()
+spawn()
 {
     llSetTimerEvent(0);
     llSetStatus(STATUS_PHYSICS, FALSE);
@@ -200,13 +226,33 @@ default
                 key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
                 if (target_owner || (owner != NULL_KEY && owner != llGetOwner()))
                 {
-                    integer info = llGetAgentInfo(k);
-                    if (info & AGENT_ON_OBJECT)
+                    if (Targeting==TARGET_PHYSIC)
                     {
                         target = k;
-                        llOwnerSay("lucked: " + llKey2Name(target));
+                    }
+                    else if (Targeting==TARGET_SCRIPTED)
+                    {
+                        target = k;
+                    }
+                    else
+                    {
+                        integer info = llGetAgentInfo(k);
+                        if (info & AGENT_ON_OBJECT)
+                        {
+                            //* TODO: can we get the root of agent, mean the object sitting on it
+                            key root = llList2Key(llGetObjectDetails(k, [LINK_ROOT]), 0);
+                            if (root != NULL_KEY)
+                                target = root;
+                            else
+                                target = k;
+                        }
+                    }
+
+                    if (target!=NULL_KEY)
+                    {
+                        llOwnerSay("locked: " + llKey2Name(target));
                         llSensorRemove();
-                        CurrentVelocity = HighVelocity;
+                        current_velocity = HighVelocity;
                         follow();
                         return;
                     }
@@ -215,12 +261,14 @@ default
         }
     }
 
-    collision( integer num_detected )
+    collision_start( integer num_detected )
     {
         if (target != NULL_KEY)
             if (llDetectedKey(0)==target)
             {
                 stateTorpedo = 0;
+                llSetTimerEvent(0);
+                explode();
             }
     }
 
@@ -230,19 +278,26 @@ default
         if (stateTorpedo == 0)
         {
             llSetTimerEvent(0);
-            if (testing)
-                stop();
+            explode();
         }
         else
         {
-            if (stateTorpedo == steps)
+            if (stateTorpedo == Life) //* first pulse, we skipped first one to let torpedo get good position after launch
             {
-                llSensorRepeat("", NULL_KEY, AGENT, sensor_range, 2 * PI, 1);
-                llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE);
+
+                integer flags = AGENT;
+                if (Targeting==TARGET_PHYSIC)
+                    flags = ACTIVE;
+                else if (Targeting==TARGET_SCRIPTED)
+                    flags = ACTIVE | SCRIPTED;
+
+                llSensorRepeat("", NULL_KEY, flags, SensorRange, 2 * PI, 1);
+                llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
             }
+
             if (target!=NULL_KEY)
                 follow();
-            push(CurrentVelocity);
+            push(current_velocity);
             stateTorpedo--;
         }
     }
