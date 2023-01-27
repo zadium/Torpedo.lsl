@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.19
-    @updated: "2023-01-28 00:47:48"
-    @revision: 799
+    @version: 1.26
+    @updated: "2023-01-28 01:02:00"
+    @revision: 808
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -47,6 +47,7 @@ float gravity = 0.0;
 key target = NULL_KEY;
 integer target_owner = TRUE; //* for testing
 integer testing = FALSE;
+integer launched = FALSE;
 
 playsoundExplode()
 {
@@ -115,6 +116,10 @@ explode()
 
 stop(integer explode_it)
 {
+    launched = FALSE;
+    stateTorpedo = 0;
+    llSetTimerEvent(0);
+
     integer number = (integer)llGetObjectDesc();
     llSetStatus(STATUS_PHYSICS, FALSE);
 
@@ -272,6 +277,7 @@ shoot()
 
     llSetStatus(STATUS_PHYSICS, TRUE);
 
+    launched = TRUE;
     stateTorpedo = Life;
 
     playsoundLaunch();
@@ -429,15 +435,23 @@ default
 
     collision_start( integer num_detected )
     {
-        if (target != NULL_KEY)
-            if (llDetectedKey(0)==target)
-            {
-                stateTorpedo = 0;
-                llSetTimerEvent(0);
-                stop(TRUE);
-            }
+         if (launched)
+        {
+            if (target != NULL_KEY)
+                if (llDetectedKey(0)==target)
+                {
+                    stop(TRUE);
+                }
+        }
     }
 
+    land_collision_start(vector pos)
+    {
+         if (launched)
+        {
+            stop(TRUE);
+        }
+    }
 
     timer()
     {
