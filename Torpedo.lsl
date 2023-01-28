@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.26
-    @updated: "2023-01-28 01:02:00"
-    @revision: 808
+    @version: 1.27
+    @updated: "2023-01-28 13:43:40"
+    @revision: 817
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -170,7 +170,7 @@ lockAvatar(key k)
     if (info & AGENT_ON_OBJECT)
     {
         //* TODO: can we get the root of agent, mean the object sitting on it
-        key root = llList2Key(llGetObjectDetails(k, [LINK_ROOT]), 0);
+        key root = llList2Key(llGetObjectDetails(k, [OBJECT_ROOT]), 0);
         if (root != NULL_KEY)
             target = root;
         else
@@ -371,7 +371,11 @@ default
         {
             testing = TRUE;
             //explode();
-            shoot();
+            //shoot();
+            key avi_key = getAviKey("Zai");
+            if (avi_key != NULL_KEY) {
+                lockAvatar(avi_key);
+            }
         }
     }
 
@@ -400,14 +404,13 @@ default
                         if (info & AGENT_ON_OBJECT)
                         {
                             //* TODO: can we get the root of agent, mean the object sitting on it
-                            key root = llList2Key(llGetObjectDetails(k, [LINK_ROOT]), 0);
+                            key root = llList2Key(llGetObjectDetails(k, [OBJECT_ROOT]), 0);
                             if (root != NULL_KEY)
                                 target = root;
                             else
                                 target = k;
                         }
                     }
-
 
                     if (Torpedo)
                     {
