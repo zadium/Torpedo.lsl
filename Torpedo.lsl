@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.27
-    @updated: "2023-01-28 16:31:13"
-    @revision: 885
+    @updated: "2023-01-28 17:02:23"
+    @revision: 896
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -20,8 +20,8 @@
 
 //* settings
 integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
-float WaterOffset = 0.5; //* if you want torpedo pull his face out of water a little
-float Shock=500; //* power to push the target object on collide
+float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
+float Shock=5000; //* power to push the target object on collide
 
 //* for Torpedo
 float TorpedoInitVelocity = 2;
@@ -45,7 +45,7 @@ vector ObjectFace = <1, 0, 0>;
 //float current_velocity = 0;
 float gravity = 0.0;
 key target = NULL_KEY;
-integer target_owner = TRUE; //* for testing
+integer target_owner = FALSE; //* for testing
 integer testing = FALSE;
 integer launched = FALSE;
 
@@ -120,7 +120,7 @@ explode()
     {
         integer count = 2;
         while (count--)
-            llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 10, ZERO_ROTATION, 1);
+            llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 25, ZERO_ROTATION, 1);
     }
     llSleep(0.5);
 }
@@ -412,7 +412,7 @@ default
                 number_detected--;
                 key k = llDetectedKey(number_detected);
                 key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
-                if (target_owner || (owner != llGetOwner()))
+                if (testing || target_owner || (owner != llGetOwner()))
                 {
                     if (Targeting == TARGET_AGENT)
                     {
