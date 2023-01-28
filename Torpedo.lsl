@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.27
-    @updated: "2023-01-28 13:43:40"
-    @revision: 817
+    @updated: "2023-01-28 16:24:36"
+    @revision: 877
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -20,7 +20,7 @@
 
 //* settings
 integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
-float WaterOffset = 0; //* if you want torpedo pull his face out of water a little
+float WaterOffset = 0.5; //* if you want torpedo pull his face out of water a little
 float Shock=500; //* power to push the target object on collide
 
 //* for Torpedo
@@ -49,6 +49,8 @@ integer target_owner = TRUE; //* for testing
 integer testing = FALSE;
 integer launched = FALSE;
 
+string CannonBall = "CannonBall";
+
 playsoundExplode()
 {
     llPlaySound("TorpedoExplode", 1.0);
@@ -61,28 +63,22 @@ playsoundLaunch()
 
 explode()
 {
-    if (Shock>0)
-    {
-        vector v = ObjectFace;
-        v =  v * Shock;
-        llPushObject(target, v, ObjectFace, TRUE);
-    }
-
     playsoundExplode();
+
     llParticleSystem([
        PSYS_PART_FLAGS,
             PSYS_PART_INTERP_SCALE_MASK
             //| PSYS_PART_FOLLOW_VELOCITY_MASK
-//            | PSYS_PART_INTERP_COLOR_MASK
+            //| PSYS_PART_INTERP_COLOR_MASK
             | PSYS_PART_EMISSIVE_MASK
             //| PSYS_PART_RIBBON_MASK
-            | PSYS_PART_WIND_MASK
+            //| PSYS_PART_WIND_MASK
             ,
         PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
         PSYS_SRC_TEXTURE, "Fire",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
-        PSYS_SRC_BURST_RATE,        0.1,
+        PSYS_SRC_BURST_RATE,        0.05,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
         PSYS_SRC_ANGLE_BEGIN,       -PI,
@@ -112,6 +108,16 @@ explode()
         PSYS_PART_END_ALPHA,        1
 
     ]);
+
+    if (Shock>0)
+    {
+        vector v = ObjectFace;
+        v =  v * Shock;
+        llPushObject(target, v, <0,0,1>, FALSE);
+    }
+
+    if (llGetInventoryKey(CannonBall) != NULL_KEY)
+        llRezObject("CannonBall", llGetPos() + ObjectFace, ObjectFace, ZERO_ROTATION, 1);
 }
 
 stop(integer explode_it)
@@ -141,8 +147,14 @@ vector getPos(key k)
     vector target_pos = llList2Vector(llGetObjectDetails(k, [OBJECT_POS]), 0);
     if (Torpedo)
     {
-        vector bottom = llList2Vector(llGetBoundingBox(k), 1); //* get the bottom of object, not center of object
-           target_pos.z -= bottom.z;
+        //* get the bottom of object, not center of object
+        list box = llGetBoundingBox(k); //* not really the bounding box :(  it wrong of object rotating, and /llGetRot() not help
+        vector min = llList2Vector(box, 0);
+        vector max=llList2Vector(box, 1);
+        if (min.z<max.z)
+            target_pos.z += min.z;
+        else
+            target_pos.z += max.z;
     }
     return target_pos;
 }
@@ -164,25 +176,32 @@ follow()
     llRotLookAt(rot, 0.5, 0.5);
 }
 
-lockAvatar(key k)
+key getRoot(key k)
 {
-    integer info = llGetAgentInfo(k);
-    if (info & AGENT_ON_OBJECT)
+    if (k==NULL_KEY)
+        return k;
+    else
     {
-        //* TODO: can we get the root of agent, mean the object sitting on it
         key root = llList2Key(llGetObjectDetails(k, [OBJECT_ROOT]), 0);
         if (root != NULL_KEY)
-            target = root;
+            return root;
         else
-            target = k;
+            return k;
     }
-    else
-        target = k;
+}
 
-    llOwnerSay("Locked: " + llKey2Name(target));
-    follow();
-    llSleep(0.1);
-    shoot();
+lockAvatar(key k)
+{
+    if (k ==NULL_KEY)
+        llOwnerSay("Nothing to lock");
+    else
+    {
+        target = getRoot(k);
+        llOwnerSay("Locked: " + llKey2Name(target));
+        follow();
+        llSleep(0.1);
+        shoot();
+    }
 }
 
 integer stateTorpedo = 0;
@@ -232,14 +251,14 @@ shoot()
         //PSYS_SRC_TEXTURE, "bubbles",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
-        PSYS_SRC_BURST_RATE,        0.05,
+        PSYS_SRC_BURST_RATE,        0.1,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
         PSYS_SRC_ANGLE_BEGIN,       -PI/8,
         PSYS_SRC_ANGLE_END,         PI/8,
 
-        PSYS_PART_START_COLOR,      <1,1,1>,
-        PSYS_PART_END_COLOR,        <1,1,1>,
+        PSYS_PART_START_COLOR,      <0.5,0.5,0.5>,
+        PSYS_PART_END_COLOR,        <0.9,0.9,0.9>,
 
         PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
         PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
@@ -247,13 +266,13 @@ shoot()
         PSYS_SRC_BURST_SPEED_MIN,     0.1,
         PSYS_SRC_BURST_SPEED_MAX,     0.2,
 
-        PSYS_SRC_BURST_RADIUS,      0.0,
+        PSYS_SRC_BURST_RADIUS,      0,
         PSYS_SRC_MAX_AGE,           0,
         PSYS_SRC_ACCEL,             <0.0, 0.0, 0.0>,
 
         PSYS_SRC_OMEGA,             <0.0, 0.0, 0.0>,
 
-        PSYS_PART_MAX_AGE,          1,
+        PSYS_PART_MAX_AGE,          2,
 
         PSYS_PART_START_GLOW,       0.0,
         PSYS_PART_END_GLOW,         0.0,
@@ -371,11 +390,11 @@ default
         {
             testing = TRUE;
             //explode();
-            //shoot();
-            key avi_key = getAviKey("Zai");
+            shoot();
+            /*key avi_key = getAviKey("Zai");
             if (avi_key != NULL_KEY) {
                 lockAvatar(avi_key);
-            }
+            }*/
         }
     }
 
@@ -388,31 +407,20 @@ default
                 number_detected--;
                 key k = llDetectedKey(number_detected);
                 key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
-                if (target_owner || (owner != NULL_KEY && owner != llGetOwner()))
+                if (target_owner || (owner != llGetOwner()))
                 {
-                    if (Targeting==TARGET_PHYSIC)
-                    {
-                        target = k;
-                    }
-                    else if (Targeting==TARGET_SCRIPTED)
-                    {
-                        target = k;
-                    }
-                    else
+                    if (Targeting == TARGET_AGENT)
                     {
                         integer info = llGetAgentInfo(k);
                         if (info & AGENT_ON_OBJECT)
-                        {
-                            //* TODO: can we get the root of agent, mean the object sitting on it
-                            key root = llList2Key(llGetObjectDetails(k, [OBJECT_ROOT]), 0);
-                            if (root != NULL_KEY)
-                                target = root;
-                            else
-                                target = k;
-                        }
+                            target = getRoot(k);
+                        else
+                            target = NULL_KEY;
                     }
+                    else
+                        target = getRoot(k);
 
-                    if (Torpedo)
+                    if (Torpedo && (target!=NULL_KEY))
                     {
                         vector target_pos = getPos(target);
                         float water = llWater(ZERO_VECTOR) + WaterOffset;
