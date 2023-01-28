@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.27
-    @updated: "2023-01-28 16:24:36"
-    @revision: 877
+    @updated: "2023-01-28 16:31:13"
+    @revision: 885
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -117,7 +117,12 @@ explode()
     }
 
     if (llGetInventoryKey(CannonBall) != NULL_KEY)
-        llRezObject("CannonBall", llGetPos() + ObjectFace, ObjectFace, ZERO_ROTATION, 1);
+    {
+        integer count = 2;
+        while (count--)
+            llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 10, ZERO_ROTATION, 1);
+    }
+    llSleep(0.5);
 }
 
 stop(integer explode_it)
