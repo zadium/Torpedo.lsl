@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.27
-    @updated: "2023-01-29 04:14:52"
-    @revision: 916
+    @version: 1.35z
+    @updated: "2023-01-29 20:44:10"
+    @revision: 943
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -30,7 +30,7 @@ float LockVelocity = 4;
 float Velocity = 1;
 float LowVelocity = 0.5;
 
-integer Life = 50; //* life in seconds
+integer Life = 10; //* life in seconds
 
 float SensorRange = 100;
 
@@ -41,7 +41,7 @@ integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* Internal variables
-vector ObjectFace = <1, 0, 0>;
+vector ObjectFace = <0, 0, 1>;
 //float current_velocity = 0;
 float gravity = 0.0;
 key target = NULL_KEY;
@@ -241,7 +241,7 @@ sence()
     llSensorRepeat("", NULL_KEY, flags, SensorRange, 2 * PI, 1);
 }
 
-shoot()
+burst()
 {
     llParticleSystem([
        PSYS_PART_FLAGS,
@@ -252,15 +252,15 @@ shoot()
             //| PSYS_PART_RIBBON_MASK
             //| PSYS_PART_WIND_MASK
             ,
-        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
+        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE,
         //PSYS_SRC_TEXTURE, "bubbles",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
         PSYS_SRC_BURST_RATE,        0.1,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
-        PSYS_SRC_ANGLE_BEGIN,       -PI/8,
-        PSYS_SRC_ANGLE_END,         PI/8,
+        PSYS_SRC_ANGLE_BEGIN,       PI, //* from back
+        PSYS_SRC_ANGLE_END,         PI,
 
         PSYS_PART_START_COLOR,      <0.5,0.5,0.5>,
         PSYS_PART_END_COLOR,        <0.9,0.9,0.9>,
@@ -268,14 +268,14 @@ shoot()
         PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
         PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
 
-        PSYS_SRC_BURST_SPEED_MIN,     0.1,
-        PSYS_SRC_BURST_SPEED_MAX,     0.2,
+        PSYS_SRC_BURST_SPEED_MIN,     0.2,
+        PSYS_SRC_BURST_SPEED_MAX,     0.6,
 
-        PSYS_SRC_BURST_RADIUS,      0,
+        PSYS_SRC_BURST_RADIUS,      1, //*long of torpedo/rocket
         PSYS_SRC_MAX_AGE,           0,
-        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.0>,
+        PSYS_SRC_ACCEL,             <0, 0, 0>,
 
-        PSYS_SRC_OMEGA,             <0.0, 0.0, 0.0>,
+        PSYS_SRC_OMEGA,             <0, 0, 0>,
 
         PSYS_PART_MAX_AGE,          2,
 
@@ -286,6 +286,11 @@ shoot()
         PSYS_PART_END_ALPHA,        0.2
 
     ]);
+}
+
+shoot()
+{
+    burst();
 
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
@@ -392,8 +397,9 @@ default
         if (llDetectedKey(0) == llGetOwner())
         {
             testing = TRUE;
+            burst();
             //explode();
-            shoot();
+            //shoot();
             /*key avi_key = getAviKey("Zai");
             if (avi_key != NULL_KEY) {
                 lockAvatar(avi_key);
