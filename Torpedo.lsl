@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.27
-    @updated: "2023-01-28 17:02:23"
-    @revision: 896
+    @updated: "2023-01-29 04:12:35"
+    @revision: 915
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -24,13 +24,13 @@ float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a li
 float Shock=5000; //* power to push the target object on collide
 
 //* for Torpedo
-float TorpedoInitVelocity = 2;
+float TorpedoInitVelocity = 1;
 float RocketInitVelocity = 10;
-float LockVelocity = 5;
+float LockVelocity = 4;
 float Velocity = 1;
 float LowVelocity = 0.5;
 
-integer Life = 30; //* life in seconds
+integer Life = 50; //* life in seconds
 
 float SensorRange = 100;
 
@@ -78,7 +78,7 @@ explode()
         PSYS_SRC_TEXTURE, "Fire",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
-        PSYS_SRC_BURST_RATE,        0.05,
+        PSYS_SRC_BURST_RATE,        0.02,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
         PSYS_SRC_ANGLE_BEGIN,       -PI,
@@ -87,19 +87,19 @@ explode()
         PSYS_PART_START_COLOR,      <5,5,5>,
         PSYS_PART_END_COLOR,        <1,1,1>,
 
-        PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
-        PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
+        PSYS_PART_START_SCALE,      <2, 2, 0>,
+        PSYS_PART_END_SCALE,        <3, 3, 0>,
 
         PSYS_SRC_BURST_SPEED_MIN,     0.1,
         PSYS_SRC_BURST_SPEED_MAX,     0.2,
 
-        PSYS_SRC_BURST_RADIUS,      0.5,
+        PSYS_SRC_BURST_RADIUS,      5,
         PSYS_SRC_MAX_AGE,           2,
         PSYS_SRC_ACCEL,             <0.0, 0.0, 0.5>,
 
         PSYS_SRC_OMEGA,             <0.0, 0.0, 0.2>,
 
-        PSYS_PART_MAX_AGE,          3,
+        PSYS_PART_MAX_AGE,          4,
 
         PSYS_PART_START_GLOW,       0.1,
         PSYS_PART_END_GLOW,         0.0,
@@ -122,7 +122,7 @@ explode()
         while (count--)
             llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 25, ZERO_ROTATION, 1);
     }
-    llSleep(0.5);
+    llSleep(2);
 }
 
 stop(integer explode_it)
@@ -309,8 +309,6 @@ shoot()
         push(TorpedoInitVelocity);
     else
         push(RocketInitVelocity);
-    if (target==NULL_KEY)
-        sence();
     llSetTimerEvent(1);
 }
 
@@ -436,8 +434,8 @@ default
                     if (target!=NULL_KEY)
                     {
                         llOwnerSay("Locked: " + llKey2Name(target));
-                        llRegionSayTo(owner, 0, "YOU ARE LOCKED");
-                        llSensorRemove();
+                        llRegionSayTo(owner, 0, "YOU ARE TARGETING BY MISSLE/TORPEDO");
+                        llSensorRemove(); //* only one target
                         follow();
                         llSleep(0.1);
                         push(LockVelocity);
@@ -481,6 +479,8 @@ default
             if (stateTorpedo == Life) //* first pulse, we skipped first one to let torpedo get good position after launch
             {
                 llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
+                if (target==NULL_KEY)
+                    sence();
             }
 
             if (target!=NULL_KEY)
@@ -507,6 +507,7 @@ default
                 string avi_name = llStringTrim(llGetSubString(message, llStringLength(lockTo), -1), STRING_TRIM);
                 key avi_key = getAviKey(avi_name);
                 if (avi_key != NULL_KEY) {
+                    testing = TRUE;
                     lockAvatar(avi_key);
                 }
                 else
