@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.35z
-    @updated: "2023-01-29 20:44:10"
-    @revision: 943
+    @version: 1.27
+    @updated: "2023-01-30 01:47:13"
+    @revision: 921
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -30,7 +30,7 @@ float LockVelocity = 4;
 float Velocity = 1;
 float LowVelocity = 0.5;
 
-integer Life = 10; //* life in seconds
+integer Life = 50; //* life in seconds
 
 float SensorRange = 100;
 
@@ -41,7 +41,7 @@ integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* Internal variables
-vector ObjectFace = <0, 0, 1>;
+vector ObjectFace = <1, 0, 0>;
 //float current_velocity = 0;
 float gravity = 0.0;
 key target = NULL_KEY;
@@ -61,7 +61,7 @@ playsoundLaunch()
     llPlaySound("TorpedoLaunch", 1.0);
 }
 
-explode()
+explode(integer hit_it)
 {
     playsoundExplode();
 
@@ -109,23 +109,26 @@ explode()
 
     ]);
 
-    if (Shock>0)
+    if (hit_it)
     {
-        vector v = ObjectFace;
-        v =  v * Shock;
-        llPushObject(target, v, <0,0,1>, FALSE);
-    }
+        if (Shock>0)
+        {
+            vector v = ObjectFace;
+            v =  v * Shock;
+            llPushObject(target, v, <0,0,1>, FALSE);
+        }
 
-    if (llGetInventoryKey(CannonBall) != NULL_KEY)
-    {
-        integer count = 2;
-        while (count--)
-            llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 25, ZERO_ROTATION, 1);
+        if (llGetInventoryKey(CannonBall) != NULL_KEY)
+        {
+            integer count = 2;
+            while (count--)
+                llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 25, ZERO_ROTATION, 1);
+        }
     }
     llSleep(2);
 }
 
-stop(integer explode_it)
+stop(integer explode_it, integer hit_it)
 {
     launched = FALSE;
     stateTorpedo = 0;
@@ -136,7 +139,7 @@ stop(integer explode_it)
 
     if (explode_it)
     {
-        explode();
+        explode(hit_it);
     }
 
     target = NULL_KEY;
@@ -241,7 +244,7 @@ sence()
     llSensorRepeat("", NULL_KEY, flags, SensorRange, 2 * PI, 1);
 }
 
-burst()
+shoot()
 {
     llParticleSystem([
        PSYS_PART_FLAGS,
@@ -252,15 +255,15 @@ burst()
             //| PSYS_PART_RIBBON_MASK
             //| PSYS_PART_WIND_MASK
             ,
-        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE,
+        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
         //PSYS_SRC_TEXTURE, "bubbles",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
         PSYS_SRC_BURST_RATE,        0.1,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
-        PSYS_SRC_ANGLE_BEGIN,       PI, //* from back
-        PSYS_SRC_ANGLE_END,         PI,
+        PSYS_SRC_ANGLE_BEGIN,       -PI/8,
+        PSYS_SRC_ANGLE_END,         PI/8,
 
         PSYS_PART_START_COLOR,      <0.5,0.5,0.5>,
         PSYS_PART_END_COLOR,        <0.9,0.9,0.9>,
@@ -268,14 +271,14 @@ burst()
         PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
         PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
 
-        PSYS_SRC_BURST_SPEED_MIN,     0.2,
-        PSYS_SRC_BURST_SPEED_MAX,     0.6,
+        PSYS_SRC_BURST_SPEED_MIN,     0.1,
+        PSYS_SRC_BURST_SPEED_MAX,     0.2,
 
-        PSYS_SRC_BURST_RADIUS,      1, //*long of torpedo/rocket
+        PSYS_SRC_BURST_RADIUS,      0,
         PSYS_SRC_MAX_AGE,           0,
-        PSYS_SRC_ACCEL,             <0, 0, 0>,
+        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.0>,
 
-        PSYS_SRC_OMEGA,             <0, 0, 0>,
+        PSYS_SRC_OMEGA,             <0.0, 0.0, 0.0>,
 
         PSYS_PART_MAX_AGE,          2,
 
@@ -286,11 +289,6 @@ burst()
         PSYS_PART_END_ALPHA,        0.2
 
     ]);
-}
-
-shoot()
-{
-    burst();
 
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
@@ -396,14 +394,19 @@ default
     {
         if (llDetectedKey(0) == llGetOwner())
         {
-            testing = TRUE;
-            burst();
-            //explode();
-            //shoot();
-            /*key avi_key = getAviKey("Zai");
-            if (avi_key != NULL_KEY) {
-                lockAvatar(avi_key);
-            }*/
+            if (launched)
+                stop(FALSE, FALSE);
+            else
+            {
+                testing = TRUE;
+                //burst();
+                //explode();
+                shoot();
+                /*key avi_key = getAviKey("Zai");
+                if (avi_key != NULL_KEY) {
+                    lockAvatar(avi_key);
+                }*/
+            }
         }
     }
 
@@ -460,7 +463,7 @@ default
             if (target != NULL_KEY)
                 if (llDetectedKey(0)==target)
                 {
-                    stop(TRUE);
+                    stop(TRUE, TRUE);
                 }
         }
     }
@@ -469,7 +472,7 @@ default
     {
          if (launched)
         {
-            stop(TRUE);
+            stop(TRUE, FALSE);
         }
     }
 
@@ -478,7 +481,7 @@ default
         if (stateTorpedo == 0)
         {
             llSetTimerEvent(0);
-            stop(FALSE);
+            stop(FALSE, FALSE);
         }
         else
         {
