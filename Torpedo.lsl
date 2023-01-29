@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.27
-    @updated: "2023-01-29 04:12:35"
-    @revision: 915
+    @updated: "2023-01-29 04:14:52"
+    @revision: 916
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -434,7 +434,7 @@ default
                     if (target!=NULL_KEY)
                     {
                         llOwnerSay("Locked: " + llKey2Name(target));
-                        llRegionSayTo(owner, 0, "YOU ARE TARGETING BY MISSLE/TORPEDO");
+                        llRegionSayTo(owner, 0, "A MISSILE/TORPEDO LOCKED ON TO YOU !");
                         llSensorRemove(); //* only one target
                         follow();
                         llSleep(0.1);
