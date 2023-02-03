@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-01-30 02:11:22"
-    @revision: 961
+    @updated: "2023-02-03 21:01:34"
+    @revision: 1101
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -19,29 +19,31 @@
 */
 
 //* settings
-integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
+integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
-float Shock=5000; //* power to push the target object on collide
+float Shock=50; //* power to push the target object on collide
+integer Life = 5; //* life in seconds
+integer Targeting = 0; //* who we will targeting? select from bellow
+
+integer TARGET_AGENT = 1;  //* agent on object, avatar should sitting on object
+integer TARGET_PHYSIC = 1;  //* physic objects
+integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* for Torpedo
 float TorpedoInitVelocity = 1;
 float RocketInitVelocity = 10;
-float LockVelocity = 4;
-float Velocity = 1;
-float LowVelocity = 0.5;
-
-integer Life = 50; //* life in seconds
+float LockVelocity = 6;
+float Velocity = 3;
+float LowVelocity = 1;
 
 float SensorRange = 100;
 
-integer Targeting = 0; //* who we will targeting? select from bellow
-
-integer TARGET_AGENT = 0;  //* agent on object, avatar should sitting on object
-integer TARGET_PHYSIC = 1;  //* physic objects
-integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
-
 //* Internal variables
-vector ObjectFace = <1, 0, 0>;
+//X Version
+//vector ObjectFace = <1, 0, 0>;
+//Z Version
+vector ObjectFace = <0, 0, 1>;
+
 //float current_velocity = 0;
 float gravity = 0.0;
 key target = NULL_KEY;
@@ -78,14 +80,14 @@ explode(integer hit_it)
         PSYS_SRC_TEXTURE, "Fire",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
-        PSYS_SRC_BURST_RATE,        0.02,
+        PSYS_SRC_BURST_RATE,        2,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
         PSYS_SRC_ANGLE_BEGIN,       -PI,
         PSYS_SRC_ANGLE_END,         PI,
 
-        PSYS_PART_START_COLOR,      <5,5,5>,
-        PSYS_PART_END_COLOR,        <1,1,1>,
+        PSYS_PART_START_COLOR,      <0.5,0.3,0.1>,
+        PSYS_PART_END_COLOR,        <1,0.5,0.1>,
 
         PSYS_PART_START_SCALE,      <2, 2, 0>,
         PSYS_PART_END_SCALE,        <3, 3, 0>,
@@ -113,9 +115,9 @@ explode(integer hit_it)
     {
         if (Shock>0)
         {
-            vector v = ObjectFace;
-            v =  v * Shock;
-            llPushObject(target, v, <0,0,1>, FALSE);
+            vector v = llRot2Euler(llGetRot() / llEuler2Rot(<0, PI/2, 0>));
+            v =  v * llGetObjectMass(target) * Shock;
+            llPushObject(target, v, llRot2Euler(llGetRot()), FALSE);
         }
 
         if (llGetInventoryKey(CannonBall) != NULL_KEY)
@@ -181,7 +183,8 @@ follow()
         }
     }
     rotation rot = llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos()));
-    llRotLookAt(rot, 0.5, 0.5);
+    //llRotLookAt(rot, 0.5, 0.5);
+    llLookAt(target_pos, 0.5, 0.5);
 }
 
 key getRoot(key k)
@@ -255,12 +258,16 @@ burst()
             //| PSYS_PART_RIBBON_MASK
             //| PSYS_PART_WIND_MASK
             ,
-        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE,
+        //-PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE,
+        PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
         //PSYS_SRC_TEXTURE, "bubbles",
-        PSYS_SRC_ANGLE_BEGIN,       PI*2,
-        PSYS_SRC_ANGLE_END,         -PI*2,
+        //-PSYS_SRC_ANGLE_BEGIN,       PI*2,
+        //-PSYS_SRC_ANGLE_END,         -PI*2,
 
-        PSYS_SRC_BURST_RADIUS,      0, //* todo to 1
+        PSYS_SRC_ANGLE_BEGIN,       PI+PI/20,
+        PSYS_SRC_ANGLE_END,         PI-PI/20,
+
+        PSYS_SRC_BURST_RADIUS,      1, //* todo to 1
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
         PSYS_SRC_BURST_RATE,        0.1,
@@ -272,8 +279,8 @@ burst()
         PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
         PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
 
-        PSYS_SRC_BURST_SPEED_MIN,     0.1,
-        PSYS_SRC_BURST_SPEED_MAX,     0.1,
+        PSYS_SRC_BURST_SPEED_MIN,     0.5,
+        PSYS_SRC_BURST_SPEED_MAX,     0.9,
 
         //PSYS_SRC_BURST_SPEED_MIN,     0.2,
         //PSYS_SRC_BURST_SPEED_MAX,     0.5,
@@ -283,7 +290,7 @@ burst()
 
         PSYS_SRC_OMEGA,             <0.0, 0.0, 0.0>,
 
-        PSYS_PART_MAX_AGE,          2,
+        PSYS_PART_MAX_AGE,          5,
 
         PSYS_PART_START_GLOW,       0.0,
         PSYS_PART_END_GLOW,         0.0,
@@ -299,15 +306,24 @@ shoot()
     burst();
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
-    //llSetVehicleType(VEHICLE_TYPE_SLED);
+    //llSetVehicleType(VEHICLE_TYPE_NONE);
+
+    //rotation refRot = llEuler2Rot(<0, 0, 0>);
+    rotation refRot = llEuler2Rot(<0, PI/2, 0>);
+    llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, refRot);
+
     llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, FALSE);
     //llSetStatus(STATUS_ROTATE_X | STATUS_ROTATE_Z | STATUS_ROTATE_Y, FALSE);
     //llSetBuoyancy(0);
-    llSetPhysicsMaterial(GRAVITY_MULTIPLIER, gravity ,0,0,0);
+    //llSetPhysicsMaterial(GRAVITY_MULTIPLIER| DENSITY, gravity ,0, 0, 1);
+    llSetPhysicsMaterial(GRAVITY_MULTIPLIER, gravity ,0, 0, 0);
 
     //llSetVehicleVectorParam(VEHICLE_ANGULAR_MOTOR_DIRECTION, <0, 0, 0>);
     //llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_DIRECTION, <0, 0, 0>);
-    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, ObjectFace);
+    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, -ObjectFace);
+
+    //llSetVehicleVectorParam(VEHICLE_LINEAR_FRICTION_TIMESCALE, <50, 50, 50>);
+    //llSetVehicleFloatParam(VEHICLE_ANGULAR_FRICTION_TIMESCALE, 0.1);
 
     llSetStatus(STATUS_PHYSICS, TRUE);
 
@@ -325,8 +341,10 @@ shoot()
 respawn()
 {
     llSetTimerEvent(0);
+    llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, ZERO_ROTATION);
     llSetStatus(STATUS_PHYSICS, FALSE);
     llSetPhysicsMaterial(GRAVITY_MULTIPLIER, 1,0,0,0);
+    llSetForce(ZERO_VECTOR, TRUE);
     llSensorRemove();
     llStopMoveToTarget();
     llStopLookAt();
@@ -344,6 +362,7 @@ init()
     llStopMoveToTarget();
     llSensorRemove();
     llParticleSystem([]);
+    llSetForce(ZERO_VECTOR, TRUE);
     testing = FALSE;
 }
 
@@ -372,6 +391,7 @@ default
 {
     state_entry()
     {
+        llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
         oldPos = llGetPos();
         oldRot = llGetRot();
         init();
@@ -485,6 +505,8 @@ default
 
     timer()
     {
+        float speed = llVecMag(llGetVel()); //* meter per seconds
+        llSetText("Speed: " + (string)speed, <1,1,1>, 1);
         if (stateTorpedo == 0)
         {
             llSetTimerEvent(0);
@@ -503,8 +525,15 @@ default
                 follow();
 
             float vel;
-            if (stateTorpedo < 4)
-                vel = LowVelocity;
+
+            if (target!=NULL_KEY)
+            {
+                vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+                float dist = llVecDist(target_pos, llGetPos());
+                vel = LowVelocity + (Velocity / Life) * dist;
+                if (vel > Velocity)
+                    vel = Velocity;
+            }
             else
                 vel = Velocity;
             push(vel);
