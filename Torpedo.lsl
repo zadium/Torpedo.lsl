@@ -4,16 +4,20 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-03 21:01:34"
-    @revision: 1101
+    @updated: "2023-02-10 16:31:41"
+    @revision: 1117
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
     @ref:
-       https://wiki.secondlife.com/wiki/LlRotBetween
+           https://wiki.secondlife.com/wiki/LlRotBetween
 
     @resources
-       https://soundbible.com/1793-Flashbang.html
+        https://soundbible.com/1793-Flashbang.html
+
+    @references
+        https://www.youtube.com/watch?v=mZiR9Bd6bS8
+        My Daughter
 
     @notice:
 */
@@ -21,8 +25,8 @@
 //* settings
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
-float Shock=50; //* power to push the target object on collide
-integer Life = 5; //* life in seconds
+float Shock=5; //* power to push the target object on collide
+integer Life = 25; //* life in seconds
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_AGENT = 1;  //* agent on object, avatar should sitting on object
@@ -31,8 +35,8 @@ integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* for Torpedo
 float TorpedoInitVelocity = 1;
-float RocketInitVelocity = 10;
-float LockVelocity = 6;
+float RocketInitVelocity = 2;
+float LockVelocity = 4;
 float Velocity = 3;
 float LowVelocity = 1;
 
@@ -52,6 +56,15 @@ integer testing = FALSE;
 integer launched = FALSE;
 
 string CannonBall = "CannonBall";
+
+vector rotate(vector v) //*rotate <1,0,0> to calc of normalized energy, see @references
+{
+    vector r;
+    r.x =llCos(v.z)*llCos(v.y);
+    r.y =llCos(v.x)*llSin(v.z)*llCos(v.y)+llSin(v.x)*llSin(v.y);
+    r.z =llSin(v.x)*llSin(v.z)*llCos(v.y)-llCos(v.x)*llSin(v.z);
+    return r;
+}
 
 playsoundExplode()
 {
@@ -115,9 +128,14 @@ explode(integer hit_it)
     {
         if (Shock>0)
         {
-            vector v = llRot2Euler(llGetRot() / llEuler2Rot(<0, PI/2, 0>));
-            v =  v * llGetObjectMass(target) * Shock;
-            llPushObject(target, v, llRot2Euler(llGetRot()), FALSE);
+            //vector v = llRot2Euler(llGetRot() / llEuler2Rot(<0, PI/2, 0>));
+            vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+            rotation rot = llRotBetween(<1.0,0.0,0.0>, llVecNorm(target_pos - llGetPos()));
+            vector vec = llRot2Euler(rot);
+            llOwnerSay(vec);
+            vec = rotate(vec) * llGetObjectMass(target) * Shock;
+            llOwnerSay(vec);
+            llPushObject(target, vec, ZERO_VECTOR, FALSE);
         }
 
         if (llGetInventoryKey(CannonBall) != NULL_KEY)
