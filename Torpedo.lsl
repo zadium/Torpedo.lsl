@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-11 15:12:27"
-    @revision: 1183
+    @updated: "2023-02-11 20:17:35"
+    @revision: 1194
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -23,14 +23,14 @@
 */
 
 //* settings
-integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water
+integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 1;
 integer Life = 25; //* life in seconds
 integer Targeting = 0; //* who we will targeting? select from bellow
 
-integer TARGET_AGENT = 1;  //* agent on object, avatar should sitting on object
+integer TARGET_AGENT = 0;  //* agent on object, avatar should sitting on object
 integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
@@ -46,12 +46,6 @@ float LowDistance = 5;//* meters
 float SensorRange = 100;
 
 integer HorzVersion = FALSE; //* if you are using X direct mesh
-
-//* Internal variables
-//X Version
-//vector ObjectFace = <1, 0, 0>;
-//Z Version
-vector ObjectFace = <0, 0, 1>;
 
 //float current_velocity = 0;
 float gravity = 0.0;
@@ -142,9 +136,15 @@ explode(integer hit_it)
 
         if (llGetInventoryKey(CannonBall) != NULL_KEY)
         {
+            vector object_face;
+            if (HorzVersion)
+                object_face = <1, 0, 0>;
+            else
+                object_face = <0, 0, 1>;
+
             integer count = 2;
             while (count--)
-                llRezObject("CannonBall", llGetPos() - ObjectFace, -ObjectFace * 25, ZERO_ROTATION, 1);
+                llRezObject("CannonBall", llGetPos() - object_face, -object_face * 25, ZERO_ROTATION, 1);
         }
     }
     llSleep(2);
@@ -246,7 +246,11 @@ integer skip = 0;
 
 push(float vel)
 {
-    vector v = ObjectFace;
+    vector v;
+    if (HorzVersion)
+        v = <1, 0, 0>;
+    else
+        v = <0, 0, 1>;
     v =  v * vel * llGetMass();
 
     if (Torpedo) //* checking if it above water
@@ -325,6 +329,12 @@ burst()
 
 shoot()
 {
+    vector object_face;
+    if (HorzVersion)
+        object_face = <1, 0, 0>;
+    else
+        object_face = <0, 0, 1>;
+
     burst();
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
@@ -342,7 +352,7 @@ shoot()
 
     //llSetVehicleVectorParam(VEHICLE_ANGULAR_MOTOR_DIRECTION, <0, 0, 0>);
     //llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_DIRECTION, <0, 0, 0>);
-    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, -ObjectFace);
+    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, -object_face);
 
     //llSetVehicleVectorParam(VEHICLE_LINEAR_FRICTION_TIMESCALE, <50, 50, 50>);
     //llSetVehicleFloatParam(VEHICLE_ANGULAR_FRICTION_TIMESCALE, 0.1);
