@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-10 16:31:41"
-    @revision: 1117
+    @updated: "2023-02-11 15:12:27"
+    @revision: 1183
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -25,7 +25,8 @@
 //* settings
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
-float Shock=5; //* power to push the target object on collide
+float Shock=15; //* power to push the target object on collide
+float Interval = 1;
 integer Life = 25; //* life in seconds
 integer Targeting = 0; //* who we will targeting? select from bellow
 
@@ -34,13 +35,17 @@ integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 //* for Torpedo
-float TorpedoInitVelocity = 1;
-float RocketInitVelocity = 2;
-float LockVelocity = 4;
-float Velocity = 3;
-float LowVelocity = 1;
+float InitVelocity = 1;
+
+float LockVelocity = 4; //* run once the target detected
+float Velocity = 3; //* normal speed
+
+float LowVelocity = 0.1;
+float LowDistance = 5;//* meters
 
 float SensorRange = 100;
+
+integer HorzVersion = FALSE; //* if you are using X direct mesh
 
 //* Internal variables
 //X Version
@@ -80,6 +85,8 @@ explode(integer hit_it)
 {
     playsoundExplode();
 
+    //PSYS_SRC_TEXTURE, "Fire",
+
     llParticleSystem([
        PSYS_PART_FLAGS,
             PSYS_PART_INTERP_SCALE_MASK
@@ -90,10 +97,9 @@ explode(integer hit_it)
             //| PSYS_PART_WIND_MASK
             ,
         PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
-        PSYS_SRC_TEXTURE, "Fire",
 
         //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
-        PSYS_SRC_BURST_RATE,        2,
+        PSYS_SRC_BURST_RATE,        0.1,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
         PSYS_SRC_ANGLE_BEGIN,       -PI,
@@ -102,17 +108,17 @@ explode(integer hit_it)
         PSYS_PART_START_COLOR,      <0.5,0.3,0.1>,
         PSYS_PART_END_COLOR,        <1,0.5,0.1>,
 
-        PSYS_PART_START_SCALE,      <2, 2, 0>,
-        PSYS_PART_END_SCALE,        <3, 3, 0>,
+        PSYS_PART_START_SCALE,      <3, 3, 0>,
+        PSYS_PART_END_SCALE,        <5, 5, 0>,
 
-        PSYS_SRC_BURST_SPEED_MIN,     0.1,
-        PSYS_SRC_BURST_SPEED_MAX,     0.2,
+        PSYS_SRC_BURST_SPEED_MIN,   0.1,
+        PSYS_SRC_BURST_SPEED_MAX,   0.2,
 
         PSYS_SRC_BURST_RADIUS,      5,
-        PSYS_SRC_MAX_AGE,           2,
+        PSYS_SRC_MAX_AGE,           3,
         PSYS_SRC_ACCEL,             <0.0, 0.0, 0.5>,
 
-        PSYS_SRC_OMEGA,             <0.0, 0.0, 0.2>,
+        PSYS_SRC_OMEGA,             <0.2, 0.2, 0.2>,
 
         PSYS_PART_MAX_AGE,          4,
 
@@ -128,13 +134,9 @@ explode(integer hit_it)
     {
         if (Shock>0)
         {
-            //vector v = llRot2Euler(llGetRot() / llEuler2Rot(<0, PI/2, 0>));
             vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-            rotation rot = llRotBetween(<1.0,0.0,0.0>, llVecNorm(target_pos - llGetPos()));
-            vector vec = llRot2Euler(rot);
-            llOwnerSay(vec);
-            vec = rotate(vec) * llGetObjectMass(target) * Shock;
-            llOwnerSay(vec);
+            vector vec = llVecNorm(target_pos - llGetPos());
+            vec = vec * llGetObjectMass(target) * Shock;
             llPushObject(target, vec, ZERO_VECTOR, FALSE);
         }
 
@@ -189,7 +191,6 @@ vector getPos(key k)
 
 follow()
 {
-//    vector target_pos = getPos(target);
     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
 
     if (Torpedo)
@@ -200,9 +201,13 @@ follow()
             target_pos.z = water; //* shifting it above, good to have it over water a little
         }
     }
-    rotation rot = llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos()));
-    //llRotLookAt(rot, 0.5, 0.5);
-    llLookAt(target_pos, 0.5, 0.5);
+    if (HorzVersion)
+    {
+        rotation rot = llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos()));
+        llRotLookAt(rot, 0.5, 0.5);
+    }
+    else
+        llLookAt(target_pos, 0.5, 0.5);
 }
 
 key getRoot(key k)
@@ -236,6 +241,8 @@ lockAvatar(key k)
 integer stateTorpedo = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
+float ExtraVelocity = 0;
+integer skip = 0;
 
 push(float vel)
 {
@@ -279,33 +286,30 @@ burst()
         //-PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE,
         PSYS_SRC_PATTERN,           PSYS_SRC_PATTERN_ANGLE_CONE,
         //PSYS_SRC_TEXTURE, "bubbles",
-        //-PSYS_SRC_ANGLE_BEGIN,       PI*2,
-        //-PSYS_SRC_ANGLE_END,         -PI*2,
+
+        //-PSYS_SRC_ANGLE_BEGIN,       PI,
+        //-PSYS_SRC_ANGLE_END,         -PI,
 
         PSYS_SRC_ANGLE_BEGIN,       PI+PI/20,
         PSYS_SRC_ANGLE_END,         PI-PI/20,
 
-        PSYS_SRC_BURST_RADIUS,      1, //* todo to 1
+        PSYS_SRC_BURST_RADIUS,      1, //* todo to 1 and config
 
-        //PSYS_PART_BLEND_FUNC_SOURCE, PSYS_PART_BF_SOURCE_ALPHA,
         PSYS_SRC_BURST_RATE,        0.1,
         PSYS_SRC_BURST_PART_COUNT,  25,
 
         PSYS_PART_START_COLOR,      <0.5,0.5,0.5>,
         PSYS_PART_END_COLOR,        <0.9,0.9,0.9>,
 
-        PSYS_PART_START_SCALE,      <0.2, 0.2, 0>,
-        PSYS_PART_END_SCALE,        <0.9, 0.9, 0>,
+        PSYS_PART_START_SCALE,      <0.5, 0.5, 0>,
+        PSYS_PART_END_SCALE,        <0.3, 0.3, 0>,
 
-        PSYS_SRC_BURST_SPEED_MIN,     0.5,
-        PSYS_SRC_BURST_SPEED_MAX,     0.9,
-
-        //PSYS_SRC_BURST_SPEED_MIN,     0.2,
-        //PSYS_SRC_BURST_SPEED_MAX,     0.5,
+        PSYS_SRC_BURST_SPEED_MIN,     0.2,
+        PSYS_SRC_BURST_SPEED_MAX,     0.5,
 
         PSYS_SRC_MAX_AGE,           0,
-        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.0>,
 
+        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.0>,
         PSYS_SRC_OMEGA,             <0.0, 0.0, 0.0>,
 
         PSYS_PART_MAX_AGE,          5,
@@ -349,11 +353,8 @@ shoot()
     stateTorpedo = Life;
 
     playsoundLaunch();
-    if (Torpedo)
-        push(TorpedoInitVelocity);
-    else
-        push(RocketInitVelocity);
-    llSetTimerEvent(1);
+    push(InitVelocity);
+    llSetTimerEvent(Interval);
 }
 
 respawn()
@@ -375,6 +376,7 @@ respawn()
 
 init()
 {
+    llSetText("", <1,1,1>, 1);
     llSetStatus(STATUS_ROTATE_X | STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE);
     llStopLookAt();
     llStopMoveToTarget();
@@ -409,7 +411,7 @@ default
 {
     state_entry()
     {
-        llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
+        //llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
         oldPos = llGetPos();
         oldRot = llGetRot();
         init();
@@ -445,7 +447,7 @@ default
             {
                 testing = TRUE;
                 //burst();
-                //explode();
+                //explode(FALSE);
                 shoot();
                 /*key avi_key = getAviKey("Zai");
                 if (avi_key != NULL_KEY) {
@@ -488,12 +490,15 @@ default
                     if (target!=NULL_KEY)
                     {
                         llOwnerSay("Locked: " + llKey2Name(target));
-                        llRegionSayTo(owner, 0, "A MISSILE/TORPEDO LOCKED ON TO YOU !");
+                        if (Torpedo)
+                            llRegionSayTo(owner, 0, "A TORPEDO LOCKED ON TO YOU !");
+                        else
+                            llRegionSayTo(owner, 0, "A MISSILE LOCKED ON TO YOU !");
                         llSensorRemove(); //* only one target
+                        ExtraVelocity = LockVelocity;
                         follow();
-                        llSleep(0.1);
-                        push(LockVelocity);
-                        llSetTimerEvent(1);//* make sure next push after 1 second
+                        skip = 1;
+                        llSetTimerEvent(Interval);//* make sure next push after 1 second
                         return;
                     }
                 }
@@ -503,7 +508,7 @@ default
 
     collision_start( integer num_detected )
     {
-         if (launched)
+        if (launched)
         {
             if (target != NULL_KEY)
                 if (llDetectedKey(0)==target)
@@ -523,8 +528,8 @@ default
 
     timer()
     {
-        float speed = llVecMag(llGetVel()); //* meter per seconds
-        llSetText("Speed: " + (string)speed, <1,1,1>, 1);
+        //float speed = llVecMag(llGetVel()); //* meter per seconds
+        //llSetText("Speed: " + (string)speed, <1,1,1>, 1);
         if (stateTorpedo == 0)
         {
             llSetTimerEvent(0);
@@ -532,30 +537,38 @@ default
         }
         else
         {
-            if (stateTorpedo == Life) //* first pulse, we skipped first one to let torpedo get good position after launch
+            if (skip > 0)
             {
-                llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
-                if (target==NULL_KEY)
-                    sence();
-            }
-
-            if (target!=NULL_KEY)
-                follow();
-
-            float vel;
-
-            if (target!=NULL_KEY)
-            {
-                vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-                float dist = llVecDist(target_pos, llGetPos());
-                vel = LowVelocity + (Velocity / Life) * dist;
-                if (vel > Velocity)
-                    vel = Velocity;
+                skip--;
+                if (target!=NULL_KEY)
+                    follow();
             }
             else
-                vel = Velocity;
-            push(vel);
-            stateTorpedo--;
+            {
+                if (stateTorpedo == Life) //* first pulse, we skipped first one to let torpedo get good position after launch
+                {
+                    llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
+                    if (target==NULL_KEY)
+                        sence();
+                }
+
+                if (target!=NULL_KEY)
+                    follow();
+
+                float vel  =Velocity + ExtraVelocity;
+
+                if (target!=NULL_KEY)
+                {
+                    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+                    float dist = llFabs(llVecDist(target_pos, llGetPos()));
+
+                    if (dist < LowDistance)
+                        vel = LowVelocity;
+                }
+                push(vel);
+                ExtraVelocity = 0;
+                stateTorpedo--;
+            }
         }
     }
 

@@ -35,13 +35,12 @@ results.append(Record(Vector(0, 0, math.pi),			Vector(-1, 0, 0)))
 results.append(Record(Vector(math.pi, 0, math.pi),		Vector(-1, 0, 0)))
 results.append(Record(Vector(0, math.pi*3/4, 0),		Vector(-0.7071, 0, -0.7071)))
 results.append(Record(Vector(0, math.pi*3/4, math.pi),	Vector(0.7071, 0, -0.7071)))
+results.append(Record(Vector(math.pi*3/4, 0, math.pi/2),Vector(0, -0.7071, 0.7071)))
+#results.append(Record(Vector(-3.141526, -0.554879, -3.141574),Vector(0, -0.7071, 0.7071)))
 
 cos=math.cos;
 sin=math.sin;
 pi = math.pi;
-
-def f(a1, a2):
-    return cos(a1) * cos(a2)
 
 """
     b = z
@@ -49,7 +48,7 @@ def f(a1, a2):
     g = x
 """
 
-def calc_vector(v):
+def rotate_vector(v):
     x,y,z=v.x,v.y, v.z;
 
     return Vector(
@@ -59,7 +58,7 @@ def calc_vector(v):
     )
 
 def check_vector(i, v, r):
-    e = calc_vector(v)
+    e = rotate_vector(v)
     if e == r:
         print("-PASS in " + str(i)+ " " + str(v)+ " = " + str(e)+ " = " + str(r));
         return True
