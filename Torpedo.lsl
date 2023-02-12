@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-11 20:17:35"
-    @revision: 1194
+    @updated: "2023-02-12 17:07:27"
+    @revision: 1350
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -22,48 +22,41 @@
     @notice:
 */
 
-//* settings
-integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water
+//* User Settings
+integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
+string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
+integer GrenadeCount = 2; //* How many?
+
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 1;
-integer Life = 25; //* life in seconds
+integer Life = 25; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
-integer TARGET_AGENT = 0;  //* agent on object, avatar should sitting on object
+integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
 integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
-//* for Torpedo
-float InitVelocity = 1;
 
-float LockVelocity = 4; //* run once the target detected
+//*------------------------------------------
+float InitVelocity = 1; //* low to make it stable first
+
+float LockVelocity = 4; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
-float LowVelocity = 0.1;
 float LowDistance = 5;//* meters
+float LowVelocity = 0.1; //* when target position it lest than LowDistance
 
 float SensorRange = 100;
 
-integer HorzVersion = FALSE; //* if you are using X direct mesh
+integer HorzVersion = FALSE; //*deprecated, if you are using X direct mesh, but i do not optimize it yet
 
-//float current_velocity = 0;
+//*-------------------------------------------
 float gravity = 0.0;
 key target = NULL_KEY;
 integer target_owner = FALSE; //* for testing
 integer testing = FALSE;
 integer launched = FALSE;
-
-string CannonBall = "CannonBall";
-
-vector rotate(vector v) //*rotate <1,0,0> to calc of normalized energy, see @references
-{
-    vector r;
-    r.x =llCos(v.z)*llCos(v.y);
-    r.y =llCos(v.x)*llSin(v.z)*llCos(v.y)+llSin(v.x)*llSin(v.y);
-    r.z =llSin(v.x)*llSin(v.z)*llCos(v.y)-llCos(v.x)*llSin(v.z);
-    return r;
-}
 
 playsoundExplode()
 {
@@ -134,7 +127,9 @@ explode(integer hit_it)
             llPushObject(target, vec, ZERO_VECTOR, FALSE);
         }
 
-        if (llGetInventoryKey(CannonBall) != NULL_KEY)
+        llMessageLinked(LINK_SET, 0, "launch", target);
+
+        if (llGetInventoryKey(Grenade) != NULL_KEY)
         {
             vector object_face;
             if (HorzVersion)
@@ -142,9 +137,9 @@ explode(integer hit_it)
             else
                 object_face = <0, 0, 1>;
 
-            integer count = 2;
+            integer count = GrenadeCount;
             while (count--)
-                llRezObject("CannonBall", llGetPos() - object_face, -object_face * 25, ZERO_ROTATION, 1);
+                llRezObject(Grenade, llGetPos() - object_face, -object_face * 25, ZERO_ROTATION, 1);
         }
     }
     llSleep(2);
@@ -224,7 +219,7 @@ key getRoot(key k)
     }
 }
 
-lockAvatar(key k)
+lockObject(key k)
 {
     if (k ==NULL_KEY)
         llOwnerSay("Nothing to lock");
@@ -234,7 +229,7 @@ lockAvatar(key k)
         llOwnerSay("Locked: " + llKey2Name(target));
         follow();
         llSleep(0.1);
-        shoot();
+        launch();
     }
 }
 
@@ -247,21 +242,26 @@ integer skip = 0;
 push(float vel)
 {
     vector v;
-    if (HorzVersion)
-        v = <1, 0, 0>;
-    else
-        v = <0, 0, 1>;
-    v =  v * vel * llGetMass();
 
     if (Torpedo) //* checking if it above water
     {
         vector pos = llGetPos();
         float water = llWater(ZERO_VECTOR) + WaterOffset;
         if (pos.z > water)
-            v.z = -0.3;
+        {
+            llApplyImpulse(<0,0,-0.5> * llGetMass(), FALSE);
+        }
     }
 
+    if (HorzVersion)
+        v = <1, 0, 0>;
+    else
+        v = <0, 0, 1>;
+
+    v =  v * vel * llGetMass();
+
     //llSetForce(v, TRUE);
+    //llOwnerSay(v);
     llApplyImpulse(v, TRUE);
 }
 
@@ -305,8 +305,8 @@ burst()
         PSYS_PART_START_COLOR,      <0.5,0.5,0.5>,
         PSYS_PART_END_COLOR,        <0.9,0.9,0.9>,
 
-        PSYS_PART_START_SCALE,      <0.5, 0.5, 0>,
-        PSYS_PART_END_SCALE,        <0.3, 0.3, 0>,
+        PSYS_PART_START_SCALE,      <1, 1, 0>,
+        PSYS_PART_END_SCALE,        <1.5, 1.5, 0>,
 
         PSYS_SRC_BURST_SPEED_MIN,     0.2,
         PSYS_SRC_BURST_SPEED_MAX,     0.5,
@@ -327,7 +327,7 @@ burst()
     ]);
 }
 
-shoot()
+launch()
 {
     vector object_face;
     if (HorzVersion)
@@ -336,23 +336,26 @@ shoot()
         object_face = <0, 0, 1>;
 
     burst();
+    llMessageLinked(LINK_SET, 0, "launch", NULL_KEY);
+
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
-    //llSetVehicleType(VEHICLE_TYPE_NONE);
+    //llSetVehicleType(VEHICLE_TYPE_SLED);
+    //llSetVehicleType(VEHICLE_TYPE_NONE);//* no collide work
 
     //rotation refRot = llEuler2Rot(<0, 0, 0>);
     rotation refRot = llEuler2Rot(<0, PI/2, 0>);
     llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, refRot);
+    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, -object_face);
+    llSetVehicleVectorParam(VEHICLE_LINEAR_FRICTION_TIMESCALE, <1000, 1000, 20000>);
 
     llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, FALSE);
     //llSetStatus(STATUS_ROTATE_X | STATUS_ROTATE_Z | STATUS_ROTATE_Y, FALSE);
     //llSetBuoyancy(0);
-    //llSetPhysicsMaterial(GRAVITY_MULTIPLIER| DENSITY, gravity ,0, 0, 1);
     llSetPhysicsMaterial(GRAVITY_MULTIPLIER, gravity ,0, 0, 0);
 
-    //llSetVehicleVectorParam(VEHICLE_ANGULAR_MOTOR_DIRECTION, <0, 0, 0>);
-    //llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_DIRECTION, <0, 0, 0>);
-    llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_OFFSET, -object_face);
+    //llSetVehicleVectorParam(VEHICLE_ANGULAR_MOTOR_DIRECTION, <PI, PI, PI>);
+    //llSetVehicleVectorParam(VEHICLE_LINEAR_MOTOR_DIRECTION, <0, 0, 1>);
 
     //llSetVehicleVectorParam(VEHICLE_LINEAR_FRICTION_TIMESCALE, <50, 50, 50>);
     //llSetVehicleFloatParam(VEHICLE_ANGULAR_FRICTION_TIMESCALE, 0.1);
@@ -370,7 +373,7 @@ shoot()
 respawn()
 {
     llSetTimerEvent(0);
-    llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, ZERO_ROTATION);
+    llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, llGetRot());
     llSetStatus(STATUS_PHYSICS, FALSE);
     llSetPhysicsMaterial(GRAVITY_MULTIPLIER, 1,0,0,0);
     llSetForce(ZERO_VECTOR, TRUE);
@@ -387,7 +390,7 @@ respawn()
 init()
 {
     llSetText("", <1,1,1>, 1);
-    llSetStatus(STATUS_ROTATE_X | STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE);
+    llSetVehicleRotationParam( VEHICLE_REFERENCE_FRAME, ZERO_ROTATION / llGetRootRotation());
     llStopLookAt();
     llStopMoveToTarget();
     llSensorRemove();
@@ -421,7 +424,7 @@ default
 {
     state_entry()
     {
-        //llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
+        llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
         oldPos = llGetPos();
         oldRot = llGetRot();
         init();
@@ -438,7 +441,7 @@ default
         if (number > 0) {
             llSetObjectDesc((string)number);
             llSetPrimitiveParams([PRIM_TEMP_ON_REZ, TRUE]);
-            shoot();
+            launch();
         }
         else
         {
@@ -456,12 +459,12 @@ default
             else
             {
                 testing = TRUE;
-                //burst();
+                burst();
                 //explode(FALSE);
-                shoot();
+                //launch();
                 /*key avi_key = getAviKey("Zai");
                 if (avi_key != NULL_KEY) {
-                    lockAvatar(avi_key);
+                    lockObject(avi_key);
                 }*/
             }
         }
@@ -478,18 +481,21 @@ default
                 key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
                 if (testing || target_owner || (owner != llGetOwner()))
                 {
-                    if (Targeting == TARGET_AGENT)
+                    if (Targeting == TARGET_SIT_AGENT)
                     {
                         integer info = llGetAgentInfo(k);
                         if (info & AGENT_ON_OBJECT)
+                        {
                             target = getRoot(k);
+                        }
                         else
                             target = NULL_KEY;
                     }
                     else
                         target = getRoot(k);
 
-                    if (Torpedo && (target!=NULL_KEY))
+
+                    if (Torpedo && (target!=NULL_KEY)) //* prevent see over water
                     {
                         vector target_pos = getPos(target);
                         float water = llWater(ZERO_VECTOR) + WaterOffset;
@@ -586,18 +592,24 @@ default
     {
         if (((channel == 0) || (channel == 1)) && (id == llGetOwner()))
         {
-            string lockTo = "lock";
+            string targetTo = "target";
 
-            if (llGetSubString(llToLower(message), 0, llStringLength(lockTo)-1) == lockTo)
+            if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
             {
-                string avi_name = llStringTrim(llGetSubString(message, llStringLength(lockTo), -1), STRING_TRIM);
-                key avi_key = getAviKey(avi_name);
-                if (avi_key != NULL_KEY) {
+//                string target_name = llStringTrim(llGetSubString(message, llStringLength(targetTo), -1), STRING_TRIM);
+                //list params = llGetSubString(message, llStringLength(cmd_firework), -1), STRING_TRIM)
+
+                list params = llParseStringKeepNulls(message,[" "],[""]);
+                string target_name = llList2String(params, 1);
+                float power = llList2Float(params, 2);
+
+                key target_key = getAviKey(target_name);
+                if (target_key != NULL_KEY) {
                     testing = TRUE;
-                    lockAvatar(avi_key);
+                    lockObject(target_key);
                 }
                 else
-                    llOwnerSay("No avatar: " + avi_name);
+                    llOwnerSay("No object: " + target_name);
             }
         }
     }
