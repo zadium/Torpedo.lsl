@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-12 17:07:27"
-    @revision: 1350
+    @updated: "2023-02-12 17:17:15"
+    @revision: 1358
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -294,19 +294,19 @@ burst()
         //-PSYS_SRC_ANGLE_BEGIN,       PI,
         //-PSYS_SRC_ANGLE_END,         -PI,
 
-        PSYS_SRC_ANGLE_BEGIN,       PI+PI/20,
-        PSYS_SRC_ANGLE_END,         PI-PI/20,
+        PSYS_SRC_ANGLE_BEGIN,       PI+PI/24,
+        PSYS_SRC_ANGLE_END,         PI-PI/24,
 
         PSYS_SRC_BURST_RADIUS,      1, //* todo to 1 and config
 
         PSYS_SRC_BURST_RATE,        0.1,
-        PSYS_SRC_BURST_PART_COUNT,  25,
+        PSYS_SRC_BURST_PART_COUNT,  15,
 
-        PSYS_PART_START_COLOR,      <0.5,0.5,0.5>,
+        PSYS_PART_START_COLOR,      <0.6,0.6,0.6>,
         PSYS_PART_END_COLOR,        <0.9,0.9,0.9>,
 
-        PSYS_PART_START_SCALE,      <1, 1, 0>,
-        PSYS_PART_END_SCALE,        <1.5, 1.5, 0>,
+        PSYS_PART_START_SCALE,      <0.5, 0.5, 0>,
+        PSYS_PART_END_SCALE,        <0.8, 0.8, 0>,
 
         PSYS_SRC_BURST_SPEED_MIN,     0.2,
         PSYS_SRC_BURST_SPEED_MAX,     0.5,
@@ -319,7 +319,7 @@ burst()
         PSYS_PART_MAX_AGE,          5,
 
         PSYS_PART_START_GLOW,       0.0,
-        PSYS_PART_END_GLOW,         0.0,
+        PSYS_PART_END_GLOW,         0.01,
 
         PSYS_PART_START_ALPHA,      0.1,
         PSYS_PART_END_ALPHA,        0.2
@@ -424,7 +424,7 @@ default
 {
     state_entry()
     {
-        llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
+        //llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
         oldPos = llGetPos();
         oldRot = llGetRot();
         init();
@@ -459,9 +459,9 @@ default
             else
             {
                 testing = TRUE;
-                burst();
+                launch();
+                //burst();
                 //explode(FALSE);
-                //launch();
                 /*key avi_key = getAviKey("Zai");
                 if (avi_key != NULL_KEY) {
                     lockObject(avi_key);
