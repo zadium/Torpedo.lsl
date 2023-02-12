@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-12 17:17:15"
-    @revision: 1358
+    @updated: "2023-02-12 22:41:43"
+    @revision: 1383
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -23,14 +23,14 @@
 */
 
 //* User Settings
-integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
+integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
 string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
-float Shock=15; //* power to push the target object on collide
+float Shock=50; //* power to push the target object on collide
 float Interval = 1;
-integer Life = 25; //* life in seconds, seconds = life*interval
+integer Life = 10; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -60,12 +60,31 @@ integer launched = FALSE;
 
 playsoundExplode()
 {
-    llPlaySound("TorpedoExplode", 1.0);
+    if (llGetInventoryKey("TorpedoExplode"))
+        llPlaySound("TorpedoExplode", 1.0);
 }
 
 playsoundLaunch()
 {
-    llPlaySound("TorpedoLaunch", 1.0);
+    if (llGetInventoryKey("TorpedoExplode"))
+        llPlaySound("TorpedoLaunch", 1.0);
+}
+
+rez()
+{
+    if (llGetInventoryKey(Grenade) != NULL_KEY)
+    {
+        vector object_face;
+        if (HorzVersion)
+            object_face = <1, 0, 0> * llGetRot();
+        else
+            object_face = <0, 0, 1> * llGetRot();
+
+        vector e = object_face * 10;
+        integer count = GrenadeCount;
+        while (count--)
+            llRezObject(Grenade, llGetPos() + object_face, e, ZERO_ROTATION, 1);
+    }
 }
 
 explode(integer hit_it)
@@ -128,19 +147,7 @@ explode(integer hit_it)
         }
 
         llMessageLinked(LINK_SET, 0, "launch", target);
-
-        if (llGetInventoryKey(Grenade) != NULL_KEY)
-        {
-            vector object_face;
-            if (HorzVersion)
-                object_face = <1, 0, 0>;
-            else
-                object_face = <0, 0, 1>;
-
-            integer count = GrenadeCount;
-            while (count--)
-                llRezObject(Grenade, llGetPos() - object_face, -object_face * 25, ZERO_ROTATION, 1);
-        }
+        rez();
     }
     llSleep(2);
 }
@@ -413,7 +420,7 @@ key getAviKey(string avi_name)
     {
         id = llList2Key(avatars, index);
         name = llGetSubString(llToLower(llKey2Name(id)), 0, len - 1);
-        if ((name == avi_name) && (!osIsNpc(id)))
+        if ((name == avi_name))// && (!osIsNpc(id)))
             return id;
         ++index;
     }
@@ -459,7 +466,8 @@ default
             else
             {
                 testing = TRUE;
-                launch();
+                //launch();
+                rez();
                 //burst();
                 //explode(FALSE);
                 /*key avi_key = getAviKey("Zai");
