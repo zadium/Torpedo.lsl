@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-12 22:41:43"
-    @revision: 1383
+    @updated: "2023-02-13 03:37:57"
+    @revision: 1389
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -28,7 +28,7 @@ string Grenade = "CannonBall"; //* special object to shoot aginst target on expl
 integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
-float Shock=50; //* power to push the target object on collide
+float Shock=15; //* power to push the target object on collide
 float Interval = 1;
 integer Life = 10; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
@@ -80,7 +80,7 @@ rez()
         else
             object_face = <0, 0, 1> * llGetRot();
 
-        vector e = object_face * 10;
+        vector e = object_face * 20;
         integer count = GrenadeCount;
         while (count--)
             llRezObject(Grenade, llGetPos() + object_face, e, ZERO_ROTATION, 1);
@@ -466,8 +466,8 @@ default
             else
             {
                 testing = TRUE;
-                //launch();
-                rez();
+                launch();
+                //rez();
                 //burst();
                 //explode(FALSE);
                 /*key avi_key = getAviKey("Zai");
