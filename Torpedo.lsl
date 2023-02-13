@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-13 03:37:57"
-    @revision: 1389
+    @updated: "2023-02-13 20:32:46"
+    @revision: 1402
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -23,14 +23,14 @@
 */
 
 //* User Settings
-integer Torpedo=TRUE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
+integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
 string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 1;
-integer Life = 10; //* life in seconds, seconds = life*interval
+integer Life = 35; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -39,9 +39,9 @@ integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 
 //*------------------------------------------
-float InitVelocity = 1; //* low to make it stable first
+float InitVelocity = 2; //* low to make it stable first
 
-float LockVelocity = 4; //* run once when the target detected
+float LockVelocity = 5; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
 float LowDistance = 5;//* meters
@@ -146,7 +146,7 @@ explode(integer hit_it)
             llPushObject(target, vec, ZERO_VECTOR, FALSE);
         }
 
-        llMessageLinked(LINK_SET, 0, "launch", target);
+        llMessageLinked(LINK_SET, 0, "shoot", target);
         rez();
     }
     llSleep(2);
@@ -325,8 +325,8 @@ burst()
 
         PSYS_PART_MAX_AGE,          5,
 
-        PSYS_PART_START_GLOW,       0.0,
-        PSYS_PART_END_GLOW,         0.01,
+        PSYS_PART_START_GLOW,       0.01,
+        PSYS_PART_END_GLOW,         0.0,
 
         PSYS_PART_START_ALPHA,      0.1,
         PSYS_PART_END_ALPHA,        0.2
@@ -343,7 +343,7 @@ launch()
         object_face = <0, 0, 1>;
 
     burst();
-    llMessageLinked(LINK_SET, 0, "launch", NULL_KEY);
+    llMessageLinked(LINK_SET, 0, "start", NULL_KEY);
 
     llSetStatus(STATUS_BLOCK_GRAB, TRUE);
     llSetVehicleType(VEHICLE_TYPE_AIRPLANE);
@@ -379,6 +379,7 @@ launch()
 
 respawn()
 {
+    llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     llSetTimerEvent(0);
     llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, llGetRot());
     llSetStatus(STATUS_PHYSICS, FALSE);
@@ -403,6 +404,7 @@ init()
     llSensorRemove();
     llParticleSystem([]);
     llSetForce(ZERO_VECTOR, TRUE);
+    llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     testing = FALSE;
 }
 
