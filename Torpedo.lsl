@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-13 20:32:46"
-    @revision: 1402
+    @updated: "2023-02-16 20:22:45"
+    @revision: 1427
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -44,8 +44,8 @@ float InitVelocity = 2; //* low to make it stable first
 float LockVelocity = 5; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
-float LowDistance = 5;//* meters
-float LowVelocity = 0.1; //* when target position it lest than LowDistance
+float LowDistance = 10;//* meters
+float LowVelocity = 1; //* when target position it lest than LowDistance
 
 float SensorRange = 100;
 
@@ -249,14 +249,15 @@ integer skip = 0;
 push(float vel)
 {
     vector v;
+    vector pos = llGetPos();
+    float mass =llGetMass();
 
     if (Torpedo) //* checking if it above water
     {
-        vector pos = llGetPos();
         float water = llWater(ZERO_VECTOR) + WaterOffset;
         if (pos.z > water)
         {
-            llApplyImpulse(<0,0,-0.5> * llGetMass(), FALSE);
+            llApplyImpulse(<0,0,-0.5> * mass, FALSE);
         }
     }
 
@@ -265,11 +266,26 @@ push(float vel)
     else
         v = <0, 0, 1>;
 
-    v =  v * vel * llGetMass();
+    integer push_it = TRUE;
 
-    //llSetForce(v, TRUE);
-    //llOwnerSay(v);
-    llApplyImpulse(v, TRUE);
+    if (target != NULL_KEY)
+    {
+        vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+        float dist = llFabs(llVecDist(target_pos, pos));
+        if (dist < LowDistance)
+        {
+            vector vec = llVecNorm(target_pos - pos) * mass;
+            llApplyImpulse(vec, FALSE);
+            push_it = FALSE;
+        }
+    }
+
+    if (push_it)
+    {
+        v =  v * vel * mass;
+        //llSetForce(v, TRUE);
+        llApplyImpulse(v, TRUE);
+    }
 }
 
 sence()
