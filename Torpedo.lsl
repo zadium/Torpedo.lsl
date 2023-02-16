@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.38
-    @updated: "2023-02-16 20:22:45"
-    @revision: 1427
+    @updated: "2023-02-16 20:32:10"
+    @revision: 1430
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -550,7 +550,7 @@ default
 
     collision_start( integer num_detected )
     {
-        if (launched)
+        if (launched && (stateTorpedo < (Life - 2))) //* let some change before collide
         {
             if (target != NULL_KEY)
                 if (llDetectedKey(0)==target)
@@ -562,7 +562,7 @@ default
 
     land_collision_start(vector pos)
     {
-         if (launched)
+        if (launched && (stateTorpedo < (Life - 2))) //* let some change before collide
         {
             stop(TRUE, FALSE);
         }
