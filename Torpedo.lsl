@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.38
-    @updated: "2023-02-16 20:32:10"
-    @revision: 1430
+    @version: 2.9
+    @updated: "2023-02-17 16:16:33"
+    @revision: 1436
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -80,7 +80,7 @@ rez()
         else
             object_face = <0, 0, 1> * llGetRot();
 
-        vector e = object_face * 20;
+        vector e = object_face * 10;
         integer count = GrenadeCount;
         while (count--)
             llRezObject(Grenade, llGetPos() + object_face, e, ZERO_ROTATION, 1);
@@ -484,8 +484,8 @@ default
             else
             {
                 testing = TRUE;
-                launch();
-                //rez();
+                //launch();
+                rez();
                 //burst();
                 //explode(FALSE);
                 /*key avi_key = getAviKey("Zai");
