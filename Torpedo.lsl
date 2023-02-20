@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.9
-    @updated: "2023-02-17 16:16:33"
-    @revision: 1436
+    @updated: "2023-02-20 20:20:07"
+    @revision: 1437
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -484,8 +484,8 @@ default
             else
             {
                 testing = TRUE;
-                //launch();
-                rez();
+                launch();
+                //rez();
                 //burst();
                 //explode(FALSE);
                 /*key avi_key = getAviKey("Zai");
