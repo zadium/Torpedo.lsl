@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.9
-    @updated: "2023-02-21 23:37:04"
-    @revision: 1511
+    @updated: "2023-02-21 23:44:35"
+    @revision: 1515
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -660,7 +660,7 @@ default
                         sence();
                         //* not working in on_rez :(
                         if (channel_number !=0 && listen_handle == 0)
-                            listen_handle = llListen(channel_number, "", llGetOwner(), "");
+                            listen_handle = llListen(channel_number, "", NULL_KEY, "");
                     }
                 }
 
@@ -686,7 +686,7 @@ default
 
     listen(integer channel, string name, key id, string message)
     {
-       if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
+        if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
         {
             getMessage(message);
         }

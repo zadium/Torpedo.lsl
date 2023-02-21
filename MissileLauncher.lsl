@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-02-21 22:54:30"
-    @revision: 100
+    @updated: "2023-02-21 23:44:16"
+    @revision: 103
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 */
@@ -111,7 +111,7 @@ default
                     float power = llList2Float(params, 1);
                     if (target != "")
                     {
-                        launch(name, power);
+                        launch(target, power);
                     }
                 }
             }
