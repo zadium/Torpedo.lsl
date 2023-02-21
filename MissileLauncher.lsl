@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-02-21 22:28:56"
-    @revision: 95
+    @updated: "2023-02-21 22:54:30"
+    @revision: 100
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 */
@@ -38,7 +38,7 @@ integer getChannel()
 launch(string target, float power)
 {
     vector pos;
-    vector vec;
+    vector power = <0,0,0>;
     rotation rot;
 
     target_name = target;
@@ -54,10 +54,11 @@ launch(string target, float power)
     else
     {
         rot = llGetRot();
-        pos = llGetPos();
+        pos = llGetPos() + <0,0,1>;
     }
 
-    llRezObject(name, pos, <0,0,0>, rot, 1); //* do not pass 0
+    power = llVecNorm(llRot2Euler(rot));
+    llRezObject(name, pos, power, rot, 1); //* do not pass 0
 }
 
 default
@@ -75,9 +76,12 @@ default
 
     object_rez(key id)
     {
-        llSleep(2); //* wait to make missile listen
-           sendCommandTo(id, "target", target_name);
-        target_name = "";
+        if (target_name != "")
+        {
+            llSleep(2); //* wait to make missile listen
+               sendCommandTo(id, "target", target_name);
+            target_name = "";
+        }
     }
 
     touch_start(integer num_detected)
