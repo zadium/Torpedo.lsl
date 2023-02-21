@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.9
-    @updated: "2023-02-20 20:20:07"
-    @revision: 1437
+    @updated: "2023-02-21 22:28:56"
+    @revision: 1492
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -57,6 +57,19 @@ key target = NULL_KEY;
 integer target_owner = FALSE; //* for testing
 integer testing = FALSE;
 integer launched = FALSE;
+
+integer channel_private_number = 5746;
+
+//*------------------
+
+integer channel_number = 0;
+integer listen_handle = 0;
+
+integer getChannel()
+{
+    key owner = llGetOwner();
+    return (((integer)("0x"+llGetSubString((string)owner,-8,-1)) & 0x3FFFFFFF) ^ 0xBFFFFFFF ) + channel_private_number;
+}
 
 playsoundExplode()
 {
@@ -239,6 +252,22 @@ lockObject(key k)
         launch();
     }
 }
+
+targetObject(key k)
+{
+    if (k ==NULL_KEY)
+        llOwnerSay("Nothing to lock");
+    else
+    {
+        target = getRoot(k);
+        llOwnerSay("Locked: " + llKey2Name(target));
+        ExtraVelocity = LockVelocity;
+        follow();
+        skip = 1;
+        llSetTimerEvent(Interval);//* make sure next push after 1 second
+    }
+}
+
 
 integer stateTorpedo = 0;
 vector oldPos; //* for testing only to return back to original pos
@@ -445,6 +474,36 @@ key getAviKey(string avi_name)
     return NULL_KEY;
 }
 
+
+getMessage(string message)
+{
+    string targetTo = "target ";
+
+    if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
+    {
+        message = llGetSubString(llToLower(message), llStringLength(targetTo), -1);
+        list params = llParseStringKeepNulls(message,[";"],[""]);
+        string target = llList2String(params, 0);
+        float power = llList2Float(params, 1);
+
+        key target_key = getAviKey(target);
+        if (target_key != NULL_KEY)
+        {
+            if (launched)
+            {
+                lockObject(target_key);
+            }
+            else
+            {
+                testing = TRUE;
+                lockObject(target_key);
+            }
+        }
+        else
+            llOwnerSay("No object: " + target);
+    }
+}
+
 default
 {
     state_entry()
@@ -457,15 +516,21 @@ default
         integer number = (integer)llGetObjectDesc();
         if (number==0)
             llListen(0, "", llGetOwner(), "");
+/*	    else
+            llListen(getChannel(), "", llGetOwner(), "");*/
     }
 
     on_rez(integer number)
     {
         llSetStatus(STATUS_PHYSICS, FALSE);
         init();
-        if (number > 0) {
+        if (number > 0)
+        {
             llSetObjectDesc((string)number);
             llSetPrimitiveParams([PRIM_TEMP_ON_REZ, TRUE]);
+            channel_number = getChannel();
+            //* llListen dose not work when rezzed from another object, so we will listen in first timer event
+            //listen_handle = llListen(channel_number, "", llGetOwner(), "");
             launch();
         }
         else
@@ -570,6 +635,10 @@ default
 
     timer()
     {
+        //* not work in on_rez :(
+        if (channel_number !=0 && listen_handle == 0)
+            listen_handle = llListen(channel_number, "", NULL_KEY, "");
+
         //float speed = llVecMag(llGetVel()); //* meter per seconds
         //llSetText("Speed: " + (string)speed, <1,1,1>, 1);
         if (stateTorpedo == 0)
@@ -614,29 +683,11 @@ default
         }
     }
 
-    listen(integer channel, string name, key id, string message)
+       listen(integer channel, string name, key id, string message)
     {
-        if (((channel == 0) || (channel == 1)) && (id == llGetOwner()))
+       if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
         {
-            string targetTo = "target";
-
-            if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
-            {
-//                string target_name = llStringTrim(llGetSubString(message, llStringLength(targetTo), -1), STRING_TRIM);
-                //list params = llGetSubString(message, llStringLength(cmd_firework), -1), STRING_TRIM)
-
-                list params = llParseStringKeepNulls(message,[" "],[""]);
-                string target_name = llList2String(params, 1);
-                float power = llList2Float(params, 2);
-
-                key target_key = getAviKey(target_name);
-                if (target_key != NULL_KEY) {
-                    testing = TRUE;
-                    lockObject(target_key);
-                }
-                else
-                    llOwnerSay("No object: " + target_name);
-            }
+            getMessage(message);
         }
     }
 }
