@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.9
-    @updated: "2023-02-21 22:28:56"
-    @revision: 1492
+    @updated: "2023-02-21 23:37:04"
+    @revision: 1511
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -54,7 +54,7 @@ integer HorzVersion = FALSE; //*deprecated, if you are using X direct mesh, but 
 //*-------------------------------------------
 float gravity = 0.0;
 key target = NULL_KEY;
-integer target_owner = FALSE; //* for testing
+integer target_owner = TRUE; //* for testing
 integer testing = FALSE;
 integer launched = FALSE;
 
@@ -239,17 +239,27 @@ key getRoot(key k)
     }
 }
 
+lock(key k)
+{
+    llSensorRemove(); //* only one target
+    target = getRoot(k);
+    key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
+    llOwnerSay("Locked: " + llKey2Name(target));
+    if (Torpedo)
+        llRegionSayTo(owner, 0, "A TORPEDO LOCKED ON TO YOU !");
+    else
+        llRegionSayTo(owner, 0, "A MISSILE LOCKED ON TO YOU !");
+}
+
 lockObject(key k)
 {
     if (k ==NULL_KEY)
         llOwnerSay("Nothing to lock");
     else
     {
-        target = getRoot(k);
-        llOwnerSay("Locked: " + llKey2Name(target));
-        follow();
-        llSleep(0.1);
+        lock(k);
         launch();
+        follow();
     }
 }
 
@@ -259,8 +269,7 @@ targetObject(key k)
         llOwnerSay("Nothing to lock");
     else
     {
-        target = getRoot(k);
-        llOwnerSay("Locked: " + llKey2Name(target));
+        lock(k);
         ExtraVelocity = LockVelocity;
         follow();
         skip = 1;
@@ -491,7 +500,7 @@ getMessage(string message)
         {
             if (launched)
             {
-                lockObject(target_key);
+                targetObject(target_key);
             }
             else
             {
@@ -516,7 +525,7 @@ default
         integer number = (integer)llGetObjectDesc();
         if (number==0)
             llListen(0, "", llGetOwner(), "");
-/*	    else
+/*        else
             llListen(getChannel(), "", llGetOwner(), "");*/
     }
 
@@ -596,16 +605,7 @@ default
 
                     if (target!=NULL_KEY)
                     {
-                        llOwnerSay("Locked: " + llKey2Name(target));
-                        if (Torpedo)
-                            llRegionSayTo(owner, 0, "A TORPEDO LOCKED ON TO YOU !");
-                        else
-                            llRegionSayTo(owner, 0, "A MISSILE LOCKED ON TO YOU !");
-                        llSensorRemove(); //* only one target
-                        ExtraVelocity = LockVelocity;
-                        follow();
-                        skip = 1;
-                        llSetTimerEvent(Interval);//* make sure next push after 1 second
+                        targetObject(target);
                         return;
                     }
                 }
@@ -635,10 +635,6 @@ default
 
     timer()
     {
-        //* not work in on_rez :(
-        if (channel_number !=0 && listen_handle == 0)
-            listen_handle = llListen(channel_number, "", NULL_KEY, "");
-
         //float speed = llVecMag(llGetVel()); //* meter per seconds
         //llSetText("Speed: " + (string)speed, <1,1,1>, 1);
         if (stateTorpedo == 0)
@@ -660,7 +656,12 @@ default
                 {
                     llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
                     if (target==NULL_KEY)
+                    {
                         sence();
+                        //* not working in on_rez :(
+                        if (channel_number !=0 && listen_handle == 0)
+                            listen_handle = llListen(channel_number, "", llGetOwner(), "");
+                    }
                 }
 
                 if (target!=NULL_KEY)
@@ -683,7 +684,7 @@ default
         }
     }
 
-       listen(integer channel, string name, key id, string message)
+    listen(integer channel, string name, key id, string message)
     {
        if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
         {
