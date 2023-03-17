@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.9
-    @updated: "2023-02-21 23:44:35"
-    @revision: 1515
+    @updated: "2023-03-01 01:20:42"
+    @revision: 1518
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 
@@ -36,7 +36,6 @@ integer Targeting = 0; //* who we will targeting? select from bellow
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
 integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
-
 
 //*------------------------------------------
 float InitVelocity = 2; //* low to make it stable first

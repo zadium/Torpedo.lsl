@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.0
-    @updated: "2023-02-21 23:44:16"
-    @revision: 103
+    @updated: "2023-03-16 14:56:21"
+    @revision: 104
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @license: MIT
 */
@@ -47,9 +47,12 @@ launch(string target, float power)
 
     if (llGetAttached())
     {
-        rot = llGetLocalRot() * llGetRot();
-        //vector vec = llVecNorm(llRot2Euler(rot));
-        pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;;
+        //rot = (llGetRootRotation() * llGetLocalRot()) * llGetRot();
+        rot = llGetLocalRot() * llGetRootRotation();
+        vector v = llRot2Euler(rot);
+        rot = llEuler2Rot(<v.x, v.y, v.z>);
+        llOwnerSay(llRot2Euler(rot) * RAD_TO_DEG);
+        pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;
     }
     else
     {
@@ -79,7 +82,7 @@ default
         if (target_name != "")
         {
             llSleep(2); //* wait to make missile listen
-               sendCommandTo(id, "target", target_name);
+            sendCommandTo(id, "target", target_name);
             target_name = "";
         }
     }
