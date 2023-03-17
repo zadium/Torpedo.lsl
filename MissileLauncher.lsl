@@ -3,10 +3,11 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.0
-    @updated: "2023-03-16 14:56:21"
-    @revision: 104
+    @version: 1.4
+    @updated: "2023-03-17 19:52:00"
+    @revision: 102
     @localfile: ?defaultpath\Torpedo\?@name.lsl
+    @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
 */
 //* settings
@@ -47,12 +48,9 @@ launch(string target, float power)
 
     if (llGetAttached())
     {
-        //rot = (llGetRootRotation() * llGetLocalRot()) * llGetRot();
-        rot = llGetLocalRot() * llGetRootRotation();
-        vector v = llRot2Euler(rot);
-        rot = llEuler2Rot(<v.x, v.y, v.z>);
-        llOwnerSay(llRot2Euler(rot) * RAD_TO_DEG);
-        pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;
+        rot = llGetLocalRot() * llGetRot();
+        //vector vec = llVecNorm(llRot2Euler(rot));
+        pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;;
     }
     else
     {
@@ -82,7 +80,7 @@ default
         if (target_name != "")
         {
             llSleep(2); //* wait to make missile listen
-            sendCommandTo(id, "target", target_name);
+               sendCommandTo(id, "target", target_name);
             target_name = "";
         }
     }
@@ -114,7 +112,7 @@ default
                     float power = llList2Float(params, 1);
                     if (target != "")
                     {
-                        launch(target, power);
+                        launch(name, power);
                     }
                 }
             }

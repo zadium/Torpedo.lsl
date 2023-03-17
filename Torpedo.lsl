@@ -3,10 +3,11 @@
     @description:
 
     @author: Zai Dium
-    @version: 2.9
-    @updated: "2023-03-01 01:20:42"
-    @revision: 1518
+    @version: 2.10
+    @updated: "2023-03-17 19:51:50"
+    @revision: 1512
     @localfile: ?defaultpath\Torpedo\?@name.lsl
+    @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
 
     @ref:
@@ -36,6 +37,7 @@ integer Targeting = 0; //* who we will targeting? select from bellow
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
 integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
+
 
 //*------------------------------------------
 float InitVelocity = 2; //* low to make it stable first
@@ -659,7 +661,7 @@ default
                         sence();
                         //* not working in on_rez :(
                         if (channel_number !=0 && listen_handle == 0)
-                            listen_handle = llListen(channel_number, "", NULL_KEY, "");
+                            listen_handle = llListen(channel_number, "", llGetOwner(), "");
                     }
                 }
 
@@ -685,7 +687,7 @@ default
 
     listen(integer channel, string name, key id, string message)
     {
-        if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
+       if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
         {
             getMessage(message);
         }
