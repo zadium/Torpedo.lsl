@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-03-17 19:51:50"
-    @revision: 1512
+    @updated: "2023-05-18 17:03:17"
+    @revision: 1525
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -25,7 +25,7 @@
 
 //* User Settings
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
-string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
+string Grenade = "Grenade"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little

@@ -4,11 +4,15 @@
 
     @author: Zai Dium
     @version: 1.4
-    @updated: "2023-03-17 19:52:00"
-    @revision: 102
+    @updated: "2023-05-26 17:14:51"
+    @revision: 111
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
+
+    @ref
+        https://community.secondlife.com/forums/topic/477699-laser-that-rezzes-in-front-of-you-on-command-how-to/
+        llRezAtRoot( "MySuperLaserGun", llGetPos() + <2.0,0.0,1.5>*llGetRot(), ZERO_VECTOR, llGetRot(), 0);
 */
 //* settings
 integer channel_private_number = 5746;
