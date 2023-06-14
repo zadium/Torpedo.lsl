@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.4
-    @updated: "2023-06-15 02:07:03"
-    @revision: 149
+    @updated: "2023-06-15 02:32:54"
+    @revision: 160
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -16,6 +16,7 @@
 */
 //* settings
 integer channel_private_number = 5746;
+string animation = "Launcher";
 
 //*------------------
 
@@ -92,6 +93,27 @@ default
             {
                 launch("");
             }
+        }
+    }
+
+    attach(key id)
+    {
+        if (id != NULL_KEY)     // is a valid key and not NULL_KEY
+        {
+            llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
+        }
+        else
+        {
+            if (animation != "")
+                llStopAnimation(animation);
+        }
+    }
+
+    run_time_permissions(integer perm)
+    {
+        if (perm & PERMISSION_TRIGGER_ANIMATION)
+        {
+            llStartAnimation(animation);
         }
     }
 
