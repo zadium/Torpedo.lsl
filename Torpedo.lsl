@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-05-18 17:03:17"
-    @revision: 1525
+    @updated: "2023-06-15 02:07:03"
+    @revision: 1558
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -25,7 +25,7 @@
 
 //* User Settings
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
-string Grenade = "Grenade"; //* special object to shoot aginst target on explode
+string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
@@ -40,6 +40,7 @@ integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
 
 //*------------------------------------------
+float SpeedFactor = 1; //* multiply with Velocity
 float InitVelocity = 2; //* low to make it stable first
 
 float LockVelocity = 5; //* run once when the target detected
@@ -172,7 +173,6 @@ stop(integer explode_it, integer hit_it)
     stateTorpedo = 0;
     llSetTimerEvent(0);
 
-    integer number = (integer)llGetObjectDesc();
     llSetStatus(STATUS_PHYSICS, FALSE);
 
     if (explode_it)
@@ -284,9 +284,11 @@ vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 float ExtraVelocity = 0;
 integer skip = 0;
+float factor =     SpeedFactor;
 
 push(float vel)
 {
+    vel = vel * factor;
     vector v;
     vector pos = llGetPos();
     float mass =llGetMass();
@@ -434,6 +436,7 @@ launch()
 
 respawn()
 {
+    factor = SpeedFactor;
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     llSetTimerEvent(0);
     llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, llGetRot());
@@ -492,9 +495,13 @@ getMessage(string message)
     if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
     {
         message = llGetSubString(llToLower(message), llStringLength(targetTo), -1);
-        list params = llParseStringKeepNulls(message,[";"],[""]);
+        list params = llParseStringKeepNulls(message,[","],[""]);
         string target = llList2String(params, 0);
-        float power = llList2Float(params, 1);
+        float power;
+        if (llList2String(params, 1) != "")
+            factor = llList2Float(params, 1);
+        if (llList2String(params, 2) != "")
+            power = llList2Float(params, 2);
 
         key target_key = getAviKey(target);
         if (target_key != NULL_KEY)
@@ -523,11 +530,7 @@ default
         oldRot = llGetRot();
         init();
         stateTorpedo = 0;
-        integer number = (integer)llGetObjectDesc();
-        if (number==0)
-            llListen(0, "", llGetOwner(), "");
-/*        else
-            llListen(getChannel(), "", llGetOwner(), "");*/
+        llListen(0, "", llGetOwner(), "");
     }
 
     on_rez(integer number)
@@ -536,10 +539,9 @@ default
         init();
         if (number > 0)
         {
-            llSetObjectDesc((string)number);
             llSetPrimitiveParams([PRIM_TEMP_ON_REZ, TRUE]);
-            channel_number = getChannel();
             //* llListen dose not work when rezzed from another object, so we will listen in first timer event
+            //channel_number = getChannel();
             //listen_handle = llListen(channel_number, "", llGetOwner(), "");
             launch();
         }
@@ -660,8 +662,11 @@ default
                     {
                         sence();
                         //* not working in on_rez :(
-                        if (channel_number !=0 && listen_handle == 0)
-                            listen_handle = llListen(channel_number, "", llGetOwner(), "");
+                        channel_number = getChannel();
+                        if (listen_handle == 0)
+                        {
+                            listen_handle = llListen(channel_number, "", NULL_KEY, "");
+                        }
                     }
                 }
 
@@ -687,7 +692,7 @@ default
 
     listen(integer channel, string name, key id, string message)
     {
-       if (((channel == 0) && (id == llGetOwner())) || (channel == channel_number))
+       if (((channel == 0) && (id == llGetOwner())) || ((channel == channel_number) && (llGetOwnerKey(id) == llGetOwner())))
         {
             getMessage(message);
         }

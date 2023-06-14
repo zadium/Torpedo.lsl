@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.4
-    @updated: "2023-05-26 17:14:51"
-    @revision: 111
+    @updated: "2023-06-15 02:07:03"
+    @revision: 149
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -20,18 +20,12 @@ integer channel_private_number = 5746;
 //*------------------
 
 integer channel_number = 0;
-string target_name = "";
+string target_message = "";
 
 sendCommand(string cmd, string params) {
     if (params != "")
         cmd = cmd + " " + params;
     llRegionSay(channel_number, cmd);
-}
-
-sendCommandTo(key id, string cmd, string params) {
-    if (params != "")
-        cmd = cmd + " " + params;
-    llRegionSayTo(id, channel_number, cmd);
 }
 
 integer getChannel()
@@ -40,13 +34,13 @@ integer getChannel()
     return (((integer)("0x"+llGetSubString((string)owner,-8,-1)) & 0x3FFFFFFF) ^ 0xBFFFFFFF ) + channel_private_number;
 }
 
-launch(string target, float power)
+launch(string message)
 {
     vector pos;
     vector power = <0,0,0>;
     rotation rot;
 
-    target_name = target;
+    target_message = message;
 
     string name = llGetInventoryName(INVENTORY_OBJECT, 0);
 
@@ -54,12 +48,13 @@ launch(string target, float power)
     {
         rot = llGetLocalRot() * llGetRot();
         //vector vec = llVecNorm(llRot2Euler(rot));
-        pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;;
+        //pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;
+        pos = (llGetRootPosition() + llGetLocalPos()) + (llRot2Up(rot) * 2) ; //* in front of launcher
     }
     else
     {
         rot = llGetRot();
-        pos = llGetPos() + <0,0,1>;
+        pos = llGetPos() + (llRot2Up(rot) * 2) ; //* in front of launcher
     }
 
     power = llVecNorm(llRot2Euler(rot));
@@ -81,11 +76,11 @@ default
 
     object_rez(key id)
     {
-        if (target_name != "")
+        if (target_message != "")
         {
             llSleep(2); //* wait to make missile listen
-               sendCommandTo(id, "target", target_name);
-            target_name = "";
+            llRegionSayTo(id, channel_number, target_message);
+            target_message = "";
         }
     }
 
@@ -93,9 +88,9 @@ default
     {
         if (llDetectedKey(0) == llGetOwner())
         {
-            if (target_name == "")
+            if (target_message == "")
             {
-                launch("", 0);
+                launch("");
             }
         }
     }
@@ -104,20 +99,13 @@ default
     {
         if (((channel == 0) || (channel == 1)) && (id == llGetOwner()))
         {
-            if (target_name == "")
+            if (target_message == "")
             {
                 string targetTo = "target ";
 
                 if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
                 {
-                    message = llGetSubString(llToLower(message), llStringLength(targetTo), -1);
-                    list params = llParseStringKeepNulls(message,[";"],[""]);
-                    string target = llList2String(params, 0);
-                    float power = llList2Float(params, 1);
-                    if (target != "")
-                    {
-                        launch(name, power);
-                    }
+                    launch(message);
                 }
             }
         }
