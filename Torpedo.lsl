@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-15 02:07:03"
-    @revision: 1558
+    @updated: "2023-06-15 16:04:14"
+    @revision: 1584
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -31,7 +31,7 @@ integer GrenadeCount = 2; //* How many?
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 1;
-integer Life = 35; //* life in seconds, seconds = life*interval
+integer Life = 60; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -46,8 +46,10 @@ float InitVelocity = 2; //* low to make it stable first
 float LockVelocity = 5; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
-float LowDistance = 10;//* meters
-float LowVelocity = 1; //* when target position it lest than LowDistance
+float LowDistance = 10;//* meters, to start push directly to the target
+//float LowVelocity = 1; //* when target position it last than LowDistance
+
+float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
 
 float SensorRange = 100;
 
@@ -83,6 +85,12 @@ playsoundLaunch()
 {
     if (llGetInventoryKey("TorpedoExplode"))
         llPlaySound("TorpedoLaunch", 1.0);
+}
+
+playsound()
+{
+    if (llGetInventoryKey("TorpedoSound"))
+        llPlaySound("TorpedoSound", 1.0);
 }
 
 rez()
@@ -313,10 +321,14 @@ push(float vel)
     {
         vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
         float dist = llFabs(llVecDist(target_pos, pos));
-        if (dist < LowDistance)
+        if ((ProximityHit>0) && (dist < ProximityHit))
         {
-            vector vec = llVecNorm(target_pos - pos) * mass;
-            llApplyImpulse(vec, FALSE);
+            stop(TRUE, TRUE);
+        }
+        else if (dist < LowDistance)
+        {
+            vector vec = llVecNorm(target_pos - pos) * mass * vel;
+            llApplyImpulse(vec, TRUE);
             push_it = FALSE;
         }
     }
@@ -495,13 +507,16 @@ getMessage(string message)
     if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
     {
         message = llGetSubString(llToLower(message), llStringLength(targetTo), -1);
-        list params = llParseStringKeepNulls(message,[","],[""]);
+        list params = llParseStringKeepNulls(message,[","],[]);
         string target = llList2String(params, 0);
         float power;
-        if (llList2String(params, 1) != "")
-            factor = llList2Float(params, 1);
-        if (llList2String(params, 2) != "")
-            power = llList2Float(params, 2);
+        string s;
+        s = llStringTrim(llList2String(params, 1), STRING_TRIM);
+        if (s != "")
+            factor = (float)s;
+        s = llStringTrim(llList2String(params, 2), STRING_TRIM);
+        if (s != "")
+            power = (float)s;
 
         key target_key = getAviKey(target);
         if (target_key != NULL_KEY)
@@ -680,8 +695,8 @@ default
                     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
                     float dist = llFabs(llVecDist(target_pos, llGetPos()));
 
-                    if (dist < LowDistance)
-                        vel = LowVelocity;
+/*                    if (dist < LowDistance)
+                        vel = LowVelocity;*/
                 }
                 push(vel);
                 ExtraVelocity = 0;
@@ -694,7 +709,7 @@ default
     {
        if (((channel == 0) && (id == llGetOwner())) || ((channel == channel_number) && (llGetOwnerKey(id) == llGetOwner())))
         {
-            getMessage(message);
+            getMessage(llStringTrim(message, STRING_TRIM));
         }
     }
 }
