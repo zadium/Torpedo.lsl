@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.4
-    @updated: "2023-06-15 15:33:38"
-    @revision: 195
+    @updated: "2023-06-15 16:09:55"
+    @revision: 196
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -51,12 +51,15 @@ launch(string message)
         //vector vec = llVecNorm(llRot2Euler(rot));
         //pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;
         pos = (llGetRootPosition() + llGetLocalPos()) + (llRot2Up(rot) * 2) ; //* in front of launcher
+        /*
         llOwnerSay("---");
-        //llOwnerSay((string)(llRot2Euler(llList2Rot(llGetLinkPrimitiveParams( LINK_ROOT, [PRIM_ROTATION] ), 0)) * RAD_TO_DEG));
+        llOwnerSay((string)(llRot2Euler(llList2Rot(llGetLinkPrimitiveParams( LINK_ROOT, [PRIM_ROTATION] ), 0)) * RAD_TO_DEG));
+
         llOwnerSay((string)(llRot2Euler(llGetRootRotation()) * RAD_TO_DEG));
         llOwnerSay((string)(llRot2Euler(llGetRot()) * RAD_TO_DEG));
         llOwnerSay((string)(llRot2Euler(llGetLocalRot()) * RAD_TO_DEG));
         llOwnerSay((string)(llRot2Euler(rot) * RAD_TO_DEG));
+        */
     }
     else
     {
