@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.4
-    @updated: "2023-06-15 02:32:54"
-    @revision: 160
+    @updated: "2023-06-15 03:30:13"
+    @revision: 173
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -16,7 +16,7 @@
 */
 //* settings
 integer channel_private_number = 5746;
-string animation = "Launcher";
+string animation = "HandOnLauncher";
 
 //*------------------
 
@@ -67,6 +67,8 @@ default
     state_entry()
     {
         channel_number = getChannel();
+        if (llGetAttached())
+            llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
         llListen(0, "", llGetOwner(), "");
     }
 
@@ -98,14 +100,28 @@ default
 
     attach(key id)
     {
-        if (id != NULL_KEY)     // is a valid key and not NULL_KEY
+        if (id != NULL_KEY)
         {
             llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
         }
         else
         {
             if (animation != "")
+            {
                 llStopAnimation(animation);
+            }
+        }
+    }
+
+    changed(integer change)
+    {
+        if (change & CHANGED_LINK)
+        {
+            if (llGetAttached())
+            {
+                llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
+            }
+
         }
     }
 
