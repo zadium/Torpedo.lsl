@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-15 16:04:14"
-    @revision: 1584
+    @updated: "2023-06-15 20:48:04"
+    @revision: 1600
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -31,7 +31,7 @@ integer GrenadeCount = 2; //* How many?
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 1;
-integer Life = 60; //* life in seconds, seconds = life*interval
+integer Life = 10; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -83,14 +83,11 @@ playsoundExplode()
 
 playsoundLaunch()
 {
-    if (llGetInventoryKey("TorpedoExplode"))
+    llSetSoundQueueing(TRUE);
+    if (llGetInventoryKey("TorpedoLaunch"))
         llPlaySound("TorpedoLaunch", 1.0);
-}
-
-playsound()
-{
     if (llGetInventoryKey("TorpedoSound"))
-        llPlaySound("TorpedoSound", 1.0);
+         llLoopSoundMaster("TorpedoSound", 1.0);
 }
 
 rez()
@@ -182,6 +179,8 @@ stop(integer explode_it, integer hit_it)
     llSetTimerEvent(0);
 
     llSetStatus(STATUS_PHYSICS, FALSE);
+    llSetSoundQueueing(FALSE);
+    llStopSound();
 
     if (explode_it)
     {
@@ -442,6 +441,7 @@ launch()
     stateTorpedo = Life;
 
     playsoundLaunch();
+
     push(InitVelocity);
     llSetTimerEvent(Interval);
 }
@@ -449,6 +449,8 @@ launch()
 respawn()
 {
     factor = SpeedFactor;
+    llSetSoundQueueing(FALSE);
+    llStopSound();
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     llSetTimerEvent(0);
     llSetVehicleRotationParam(VEHICLE_REFERENCE_FRAME, llGetRot());
@@ -499,7 +501,6 @@ key getAviKey(string avi_name)
     return NULL_KEY;
 }
 
-
 getMessage(string message)
 {
     string targetTo = "target ";
@@ -545,6 +546,7 @@ default
         oldRot = llGetRot();
         init();
         stateTorpedo = 0;
+        llStopSound();
         llListen(0, "", llGetOwner(), "");
     }
 

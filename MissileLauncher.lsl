@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.4
-    @updated: "2023-06-15 16:09:55"
-    @revision: 196
+    @version: 1.8
+    @updated: "2023-06-16 23:40:23"
+    @revision: 225
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -16,7 +16,7 @@
 */
 //* settings
 integer channel_private_number = 5746;
-string animation = "HandOnLauncher";
+string animation = "Stinger 5";
 
 //*------------------
 
