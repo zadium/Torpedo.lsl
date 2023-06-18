@@ -3,9 +3,9 @@
     @description:
 
     @author: Zai Dium
-    @version: 1.8
-    @updated: "2023-06-17 05:42:01"
-    @revision: 231
+    @version: 1.10
+    @updated: "2023-06-18 19:24:20"
+    @revision: 238
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -16,18 +16,11 @@
 */
 //* settings
 integer channel_private_number = 5746;
-string animation = "Stinger 5";
 
 //*------------------
 
 integer channel_number = 0;
 string target_message = "";
-
-sendCommand(string cmd, string params) {
-    if (params != "")
-        cmd = cmd + " " + params;
-    llRegionSay(channel_number, cmd);
-}
 
 integer getChannel()
 {
@@ -84,8 +77,6 @@ default
     state_entry()
     {
         channel_number = getChannel();
-        if (llGetAttached())
-            llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
         llListen(0, "", llGetOwner(), "");
     }
 
@@ -112,41 +103,6 @@ default
             {
                 launch("");
             }
-        }
-    }
-
-    attach(key id)
-    {
-        if (id != NULL_KEY)
-        {
-            llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
-        }
-        else
-        {
-            if (animation != "")
-            {
-                llStopAnimation(animation);
-            }
-        }
-    }
-
-    changed(integer change)
-    {
-        if (change & CHANGED_LINK)
-        {
-            if (llGetAttached())
-            {
-                llRequestPermissions(llGetOwner(), PERMISSION_TRIGGER_ANIMATION);
-            }
-
-        }
-    }
-
-    run_time_permissions(integer perm)
-    {
-        if (perm & PERMISSION_TRIGGER_ANIMATION)
-        {
-            llStartAnimation(animation);
         }
     }
 
