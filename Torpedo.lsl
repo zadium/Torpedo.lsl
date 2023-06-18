@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-18 22:55:44"
-    @revision: 1637
+    @updated: "2023-06-18 23:04:05"
+    @revision: 1641
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -31,7 +31,7 @@ integer GrenadeCount = 2; //* How many?
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 0.1;
-integer Life = 10; //* life in seconds, seconds = life*interval
+integer Life = 50; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -47,7 +47,7 @@ float LockVelocity = 5; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
 float LowDistance = 10;//* meters, to start push directly to the target
-float SideVelocity = 3;
+float SideVelocity = 5;
 //float LowVelocity = 1; //* when target position it last than LowDistance
 
 float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
@@ -185,7 +185,6 @@ stop(integer explode_it, integer hit_it)
     }
 
     target = NULL_KEY;
-    llSleep(0.5);
     if (testing)
         respawn();
     else
@@ -435,7 +434,6 @@ launch()
 respawn()
 {
     factor = SpeedFactor * Interval;
-    llOwnerSay((string)factor);
     llSetSoundQueueing(FALSE);
     llStopSound();
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
@@ -466,7 +464,6 @@ init()
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     testing = FALSE;
     factor = SpeedFactor * Interval;
-    llOwnerSay((string)factor);
 }
 
 key getAviKey(string avi_name)
@@ -521,7 +518,7 @@ getMessage(string message)
                 lockObject(target_key);
             }
         }
-        else
+        else if (targetName != "")
             llOwnerSay("No object: " + targetName);
     }
 }
