@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.8
-    @updated: "2023-06-16 23:40:23"
-    @revision: 225
+    @updated: "2023-06-17 05:42:01"
+    @revision: 231
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -47,10 +47,18 @@ launch(string message)
 
     if (llGetAttached())
     {
-        rot = llGetLocalRot() * llGetRootRotation();
-        //vector vec = llVecNorm(llRot2Euler(rot));
-        //pos = llGetRootPosition() + llGetLocalPos() + <0,0,1>;
-        pos = (llGetRootPosition() + llGetLocalPos()) + (llRot2Up(rot) * 2) ; //* in front of launcher
+        //rot = llGetLocalRot() * llGetRootRotation(); //* not work fine
+
+        list box = llGetBoundingBox(llGetKey());
+        vector size = llList2Vector(box, 1) - llList2Vector(box, 0);
+
+        rot = llGetRot();
+        pos = (llGetRootPosition() + llGetLocalPos()) + (llRot2Fwd(rot) * size.z*2) ; //* in front of launcher
+
+        vector v1 = llRot2Euler(llGetRootRotation());
+        //* we will use avatar facing
+        rot = llEuler2Rot(<0, PI/2, 0>) * llEuler2Rot(<0, 0, v1.z>); //* because missile is to up we rotated it to forward
+
         /*
         llOwnerSay("---");
         llOwnerSay((string)(llRot2Euler(llList2Rot(llGetLinkPrimitiveParams( LINK_ROOT, [PRIM_ROTATION] ), 0)) * RAD_TO_DEG));

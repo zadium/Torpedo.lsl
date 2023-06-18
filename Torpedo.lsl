@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-15 20:48:04"
-    @revision: 1600
+    @updated: "2023-06-18 04:00:38"
+    @revision: 1601
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -31,7 +31,7 @@ integer GrenadeCount = 2; //* How many?
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 1;
-integer Life = 10; //* life in seconds, seconds = life*interval
+integer Life = 40; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
