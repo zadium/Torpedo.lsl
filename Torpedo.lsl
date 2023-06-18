@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-18 04:00:38"
-    @revision: 1601
+    @updated: "2023-06-18 22:32:11"
+    @revision: 1610
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -175,7 +175,8 @@ explode(integer hit_it)
 stop(integer explode_it, integer hit_it)
 {
     launched = FALSE;
-    stateTorpedo = 0;
+    stateTorpedo = FALSE;
+    launchedTime = 0;
     llSetTimerEvent(0);
 
     llSetStatus(STATUS_PHYSICS, FALSE);
@@ -286,7 +287,8 @@ targetObject(key k)
 }
 
 
-integer stateTorpedo = 0;
+integer stateTorpedo = FALSE;
+float launchedTime = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 float ExtraVelocity = 0;
@@ -438,7 +440,8 @@ launch()
     llSetStatus(STATUS_PHYSICS, TRUE);
 
     launched = TRUE;
-    stateTorpedo = Life;
+    stateTorpedo = FALSE;
+    launchedTime = llGetTime();
 
     playsoundLaunch();
 
@@ -542,10 +545,12 @@ default
     state_entry()
     {
         //llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
+        llCollisionSound("", 0.0);
         oldPos = llGetPos();
         oldRot = llGetRot();
         init();
-        stateTorpedo = 0;
+        stateTorpedo = FALSE;
+        launchedTime = 0;
         llStopSound();
         llListen(0, "", llGetOwner(), "");
     }
@@ -592,7 +597,7 @@ default
 
     sensor( integer number_detected )
     {
-        if (stateTorpedo>0)
+        if (launchedTime>0)
         {
             while (number_detected>0)
             {
@@ -635,7 +640,7 @@ default
 
     collision_start( integer num_detected )
     {
-        if (launched && (stateTorpedo < (Life - 2))) //* let some change before collide
+        if (launched && ((llGetTime() - launchedTime)>2)) //* do not collide before 2 seconds
         {
             if (target != NULL_KEY)
                 if (llDetectedKey(0)==target)
@@ -647,7 +652,7 @@ default
 
     land_collision_start(vector pos)
     {
-        if (launched && (stateTorpedo < (Life - 2))) //* let some change before collide
+        if (launched && ((llGetTime() - launchedTime)>2)) //* do not collide before 2 seconds
         {
             stop(TRUE, FALSE);
         }
@@ -657,7 +662,7 @@ default
     {
         //float speed = llVecMag(llGetVel()); //* meter per seconds
         //llSetText("Speed: " + (string)speed, <1,1,1>, 1);
-        if (stateTorpedo == 0)
+        if ((llGetTime()-launchedTime) > Life)
         {
             llSetTimerEvent(0);
             stop(FALSE, FALSE);
@@ -672,7 +677,7 @@ default
             }
             else
             {
-                if (stateTorpedo == Life) //* first pulse, we skipped first one to let torpedo get good position after launch
+                if (!stateTorpedo) //* first pulse, we skipped first one to let torpedo get good position after launch
                 {
                     llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
                     if (target==NULL_KEY)
@@ -702,7 +707,7 @@ default
                 }
                 push(vel);
                 ExtraVelocity = 0;
-                stateTorpedo--;
+                stateTorpedo = TRUE;
             }
         }
     }
