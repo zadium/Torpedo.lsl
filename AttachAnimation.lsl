@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.10
-    @updated: "2023-06-18 19:24:20"
-    @revision: 4
+    @updated: "2023-06-18 19:38:24"
+    @revision: 6
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/AttachAnimation.lsl
     @license: MIT
@@ -16,7 +16,7 @@
 */
 
 //* settings
-string animation = "Stinger 5";
+string animation = "Launcher";
 
 default
 {

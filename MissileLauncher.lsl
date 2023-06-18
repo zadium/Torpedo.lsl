@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.10
-    @updated: "2023-06-18 19:24:20"
-    @revision: 238
+    @updated: "2023-06-18 22:19:59"
+    @revision: 254
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -45,8 +45,8 @@ launch(string message)
         list box = llGetBoundingBox(llGetKey());
         vector size = llList2Vector(box, 1) - llList2Vector(box, 0);
 
-        rot = llGetRot();
-        pos = (llGetRootPosition() + llGetLocalPos()) + (llRot2Fwd(rot) * size.z*2) ; //* in front of launcher
+        rot = llGetRootRotation();
+        pos = (llGetRootPosition() + llGetLocalPos()) + (<size.z, 0, 0> * rot) ; //* in front of launcher
 
         vector v1 = llRot2Euler(llGetRootRotation());
         //* we will use avatar facing
