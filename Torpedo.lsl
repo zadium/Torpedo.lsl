@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-18 22:36:16"
-    @revision: 1617
+    @updated: "2023-06-18 22:55:44"
+    @revision: 1637
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -30,8 +30,8 @@ integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
-float Interval = 1;
-integer Life = 40; //* life in seconds, seconds = life*interval
+float Interval = 0.1;
+integer Life = 10; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -47,6 +47,7 @@ float LockVelocity = 5; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
 float LowDistance = 10;//* meters, to start push directly to the target
+float SideVelocity = 3;
 //float LowVelocity = 1; //* when target position it last than LowDistance
 
 float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
@@ -275,14 +276,13 @@ targetObject(key k)
     }
 }
 
-
 integer stateTorpedo = FALSE;
 float launchedTime = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 float ExtraVelocity = 0;
 integer skip = 0;
-float factor =     SpeedFactor;
+float factor;
 
 push(float vel)
 {
@@ -314,7 +314,7 @@ push(float vel)
         }
         else if (dist < LowDistance)
         {
-            vector vec = llVecNorm(target_pos - pos) * mass * vel;
+            vector vec = llVecNorm(target_pos - pos) * mass * SideVelocity * factor;
             llApplyImpulse(vec, TRUE);
             push_it = FALSE;
         }
@@ -434,7 +434,8 @@ launch()
 
 respawn()
 {
-    factor = SpeedFactor;
+    factor = SpeedFactor * Interval;
+    llOwnerSay((string)factor);
     llSetSoundQueueing(FALSE);
     llStopSound();
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
@@ -464,6 +465,8 @@ init()
     llSetForce(ZERO_VECTOR, TRUE);
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     testing = FALSE;
+    factor = SpeedFactor * Interval;
+    llOwnerSay((string)factor);
 }
 
 key getAviKey(string avi_name)
@@ -500,7 +503,7 @@ getMessage(string message)
         string s;
         s = llStringTrim(llList2String(params, 1), STRING_TRIM);
         if (s != "")
-            factor = (float)s;
+            factor = (float)s * Interval;
         s = llStringTrim(llList2String(params, 2), STRING_TRIM);
         if (s != "")
             power = (float)s;
@@ -528,7 +531,6 @@ default
     state_entry()
     {
         //llOwnerSay("Physics engine name is " + osGetPhysicsEngineName());
-        llCollisionSound("", 0.0);
         oldPos = llGetPos();
         oldRot = llGetRot();
         init();
