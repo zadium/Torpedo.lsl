@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-18 22:32:11"
-    @revision: 1610
+    @updated: "2023-06-18 22:36:16"
+    @revision: 1617
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -53,8 +53,6 @@ float ProximityHit = 5; //* Hit the target if reached this distance, disabled if
 
 float SensorRange = 100;
 
-integer HorzVersion = FALSE; //*deprecated, if you are using X direct mesh, but i do not optimize it yet
-
 //*-------------------------------------------
 float gravity = 0.0;
 key target = NULL_KEY;
@@ -95,10 +93,7 @@ rez()
     if (llGetInventoryKey(Grenade) != NULL_KEY)
     {
         vector object_face;
-        if (HorzVersion)
-            object_face = <1, 0, 0> * llGetRot();
-        else
-            object_face = <0, 0, 1> * llGetRot();
+        object_face = <0, 0, 1> * llGetRot();
 
         vector e = object_face * 10;
         integer count = GrenadeCount;
@@ -225,13 +220,7 @@ follow()
             target_pos.z = water; //* shifting it above, good to have it over water a little
         }
     }
-    if (HorzVersion)
-    {
-        rotation rot = llRotBetween(llRot2Fwd(ZERO_ROTATION), llVecNorm(target_pos - llGetPos()));
-        llRotLookAt(rot, 0.5, 0.5);
-    }
-    else
-        llLookAt(target_pos, 0.5, 0.5);
+    llLookAt(target_pos, 0.5, 0.5);
 }
 
 key getRoot(key k)
@@ -311,10 +300,7 @@ push(float vel)
         }
     }
 
-    if (HorzVersion)
-        v = <1, 0, 0>;
-    else
-        v = <0, 0, 1>;
+    v = <0, 0, 1>;
 
     integer push_it = TRUE;
 
@@ -407,10 +393,7 @@ burst()
 launch()
 {
     vector object_face;
-    if (HorzVersion)
-        object_face = <1, 0, 0>;
-    else
-        object_face = <0, 0, 1>;
+    object_face = <0, 0, 1>;
 
     burst();
     llMessageLinked(LINK_SET, 0, "start", NULL_KEY);
@@ -512,7 +495,7 @@ getMessage(string message)
     {
         message = llGetSubString(llToLower(message), llStringLength(targetTo), -1);
         list params = llParseStringKeepNulls(message,[","],[]);
-        string target = llList2String(params, 0);
+        string targetName = llList2String(params, 0);
         float power;
         string s;
         s = llStringTrim(llList2String(params, 1), STRING_TRIM);
@@ -522,7 +505,7 @@ getMessage(string message)
         if (s != "")
             power = (float)s;
 
-        key target_key = getAviKey(target);
+        key target_key = getAviKey(targetName);
         if (target_key != NULL_KEY)
         {
             if (launched)
@@ -536,7 +519,7 @@ getMessage(string message)
             }
         }
         else
-            llOwnerSay("No object: " + target);
+            llOwnerSay("No object: " + targetName);
     }
 }
 
@@ -696,15 +679,16 @@ default
                     follow();
 
                 float vel  =Velocity + ExtraVelocity;
-
+/*
                 if (target!=NULL_KEY)
                 {
                     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
                     float dist = llFabs(llVecDist(target_pos, llGetPos()));
 
-/*                    if (dist < LowDistance)
-                        vel = LowVelocity;*/
+                    if (dist < LowDistance)
+                        vel = LowVelocity;
                 }
+*/
                 push(vel);
                 ExtraVelocity = 0;
                 stateTorpedo = TRUE;
