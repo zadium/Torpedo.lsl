@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-18 23:04:05"
-    @revision: 1641
+    @updated: "2023-06-19 01:52:51"
+    @revision: 1644
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -38,7 +38,6 @@ integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on obj
 integer TARGET_PHYSIC = 1;  //* physic objects
 integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 
-
 //*------------------------------------------
 float SpeedFactor = 1; //* multiply with Velocity
 float InitVelocity = 2; //* low to make it stable first
@@ -47,7 +46,6 @@ float LockVelocity = 5; //* run once when the target detected
 float Velocity = 3; //* normal speed
 
 float LowDistance = 10;//* meters, to start push directly to the target
-float SideVelocity = 5;
 //float LowVelocity = 1; //* when target position it last than LowDistance
 
 float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
@@ -313,7 +311,7 @@ push(float vel)
         }
         else if (dist < LowDistance)
         {
-            vector vec = llVecNorm(target_pos - pos) * mass * SideVelocity * factor;
+            vector vec = llVecNorm(target_pos - pos) * mass * LockVelocity * factor;
             llApplyImpulse(vec, TRUE);
             push_it = FALSE;
         }
