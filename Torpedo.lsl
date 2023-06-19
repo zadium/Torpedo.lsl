@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-19 20:46:05"
-    @revision: 1695
+    @updated: "2023-06-19 21:06:29"
+    @revision: 1702
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -18,13 +18,12 @@
 
     @references
         https://www.youtube.com/watch?v=mZiR9Bd6bS8
-        My Daughter
 
     @notice:
 */
 
 //* User Settings
-integer Life = 30; //* life in seconds, seconds = life*interval
+integer Age = 50; //* life in seconds, seconds = life*interval
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
 string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
@@ -276,6 +275,7 @@ vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
 integer skip = 0;
 float factor;
+float life; //* same as Life above but local value
 
 push(float vel)
 {
@@ -429,6 +429,7 @@ launch()
 respawn()
 {
     factor = SpeedFactor * Interval;
+    life = Age;
     llSetSoundQueueing(FALSE);
     llStopSound();
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
@@ -459,6 +460,7 @@ init()
     llMessageLinked(LINK_SET, 0, "stop", NULL_KEY);
     testing = FALSE;
     factor = SpeedFactor * Interval;
+    life = Age;
 }
 
 key getAviKey(string avi_name)
@@ -491,14 +493,13 @@ getMessage(string message)
         message = llGetSubString(llToLower(message), llStringLength(targetTo), -1);
         list params = llParseStringKeepNulls(message,[","],[]);
         string targetName = llList2String(params, 0);
-        float power;
         string s;
         s = llStringTrim(llList2String(params, 1), STRING_TRIM);
         if (s != "")
             factor = (float)s * Interval;
         s = llStringTrim(llList2String(params, 2), STRING_TRIM);
         if (s != "")
-            power = (float)s;
+            life = (float)s;
 
         key target_key = getAviKey(targetName);
         if (target_key != NULL_KEY)
@@ -639,7 +640,7 @@ default
     {
         //float speed = llVecMag(llGetVel()); //* meter per seconds
         //llSetText("Speed: " + (string)speed, <1,1,1>, 1);
-        if ((llGetTime()-launchedTime) > Life)
+        if ((llGetTime()-launchedTime) > life)
         {
             llSetTimerEvent(0);
             stop(FALSE, FALSE);
