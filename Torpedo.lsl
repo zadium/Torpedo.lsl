@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-19 01:52:51"
-    @revision: 1644
+    @updated: "2023-06-19 20:46:05"
+    @revision: 1695
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -24,6 +24,7 @@
 */
 
 //* User Settings
+integer Life = 30; //* life in seconds, seconds = life*interval
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
 string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
@@ -31,7 +32,6 @@ integer GrenadeCount = 2; //* How many?
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
 float Shock=15; //* power to push the target object on collide
 float Interval = 0.1;
-integer Life = 50; //* life in seconds, seconds = life*interval
 integer Targeting = 0; //* who we will targeting? select from bellow
 
 integer TARGET_SIT_AGENT = 0;  //* agent on object, avatar should sitting on object
@@ -41,12 +41,10 @@ integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 //*------------------------------------------
 float SpeedFactor = 1; //* multiply with Velocity
 float InitVelocity = 2; //* low to make it stable first
+float Velocity = 4; //* normal speed
 
-float LockVelocity = 5; //* run once when the target detected
-float Velocity = 3; //* normal speed
-
-float LowDistance = 10;//* meters, to start push directly to the target
-//float LowVelocity = 1; //* when target position it last than LowDistance
+float NearbyDistance = 10;//* meters, to start push directly to the target
+float NearbyVelocity = 4; //* once when the close to the target
 
 float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
 
@@ -134,9 +132,9 @@ explode(integer hit_it)
         PSYS_SRC_BURST_SPEED_MIN,   0.1,
         PSYS_SRC_BURST_SPEED_MAX,   0.2,
 
-        PSYS_SRC_BURST_RADIUS,      5,
-        PSYS_SRC_MAX_AGE,           3,
-        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.5>,
+        PSYS_SRC_BURST_RADIUS,      3,
+        PSYS_SRC_MAX_AGE,           4,
+        PSYS_SRC_ACCEL,             <0.0, 0.0, 0.8>,
 
         PSYS_SRC_OMEGA,             <0.2, 0.2, 0.2>,
 
@@ -146,7 +144,7 @@ explode(integer hit_it)
         PSYS_PART_END_GLOW,         0.0,
 
         PSYS_PART_START_ALPHA,      0.5,
-        PSYS_PART_END_ALPHA,        1
+        PSYS_PART_END_ALPHA,        0.9
 
     ]);
 
@@ -266,7 +264,6 @@ targetObject(key k)
     else
     {
         lock(k);
-        ExtraVelocity = LockVelocity;
         follow();
         skip = 1;
         llSetTimerEvent(Interval);//* make sure next push after 1 second
@@ -277,7 +274,6 @@ integer stateTorpedo = FALSE;
 float launchedTime = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
-float ExtraVelocity = 0;
 integer skip = 0;
 float factor;
 
@@ -309,10 +305,11 @@ push(float vel)
         {
             stop(TRUE, TRUE);
         }
-        else if (dist < LowDistance)
+        else if (dist < NearbyDistance)
         {
-            vector vec = llVecNorm(target_pos - pos) * mass * LockVelocity * factor;
-            llApplyImpulse(vec, TRUE);
+            vector vec = llVecNorm(target_pos - pos) * mass * NearbyVelocity * factor; //* convert it to power
+//            vec = vec - llList2Vector(llGetObjectDetails(target, [OBJECT_VELOCITY]), 0) * mass;
+            llApplyImpulse(vec, FALSE);
             push_it = FALSE;
         }
     }
@@ -675,19 +672,18 @@ default
                 if (target!=NULL_KEY)
                     follow();
 
-                float vel  =Velocity + ExtraVelocity;
+                float vel  = Velocity;
 /*
                 if (target!=NULL_KEY)
                 {
                     vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
                     float dist = llFabs(llVecDist(target_pos, llGetPos()));
 
-                    if (dist < LowDistance)
+                    if (dist < NearbyDistance)
                         vel = LowVelocity;
                 }
 */
                 push(vel);
-                ExtraVelocity = 0;
                 stateTorpedo = TRUE;
             }
         }
