@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-19 21:06:29"
-    @revision: 1702
+    @updated: "2023-06-20 21:36:49"
+    @revision: 1710
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -205,7 +205,9 @@ vector getPos(key k)
 
 follow()
 {
-    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+    list details = llGetObjectDetails(target, [OBJECT_POS, OBJECT_VELOCITY]);
+    vector target_pos = llList2Vector(details, 0);
+    vector target_vel = llList2Vector(details, 1);
 
     if (Torpedo)
     {
@@ -215,7 +217,7 @@ follow()
             target_pos.z = water; //* shifting it above, good to have it over water a little
         }
     }
-    llLookAt(target_pos, 0.5, 0.5);
+    llLookAt(target_pos + target_vel * Interval, 0.5, 0.5);
 }
 
 key getRoot(key k)
@@ -299,7 +301,9 @@ push(float vel)
 
     if (target != NULL_KEY)
     {
-        vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+        list details = llGetObjectDetails(target, [OBJECT_POS, OBJECT_VELOCITY]);
+        vector target_pos = llList2Vector(details, 0);
+        vector target_vel = llList2Vector(details, 1);
         float dist = llFabs(llVecDist(target_pos, pos));
         if ((ProximityHit>0) && (dist < ProximityHit))
         {
@@ -307,8 +311,8 @@ push(float vel)
         }
         else if (dist < NearbyDistance)
         {
+            target_pos = target_pos + target_vel * Interval;
             vector vec = llVecNorm(target_pos - pos) * mass * NearbyVelocity * factor; //* convert it to power
-//            vec = vec - llList2Vector(llGetObjectDetails(target, [OBJECT_VELOCITY]), 0) * mass;
             llApplyImpulse(vec, FALSE);
             push_it = FALSE;
         }
