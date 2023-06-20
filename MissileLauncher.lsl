@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.10
-    @updated: "2023-06-18 22:19:59"
-    @revision: 254
+    @updated: "2023-06-20 22:28:26"
+    @revision: 255
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -28,8 +28,16 @@ integer getChannel()
     return (((integer)("0x"+llGetSubString((string)owner,-8,-1)) & 0x3FFFFFFF) ^ 0xBFFFFFFF ) + channel_private_number;
 }
 
+playsoundLaunch()
+{
+    if (llGetInventoryKey("TorpedoLaunch"))
+        llPlaySound("TorpedoLaunch", 1.0);
+}
+
 launch(string message)
 {
+    playsoundLaunch();
+
     vector pos;
     vector power = <0,0,0>;
     rotation rot;

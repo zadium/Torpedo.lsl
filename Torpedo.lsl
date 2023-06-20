@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-20 21:36:49"
-    @revision: 1710
+    @updated: "2023-06-20 22:24:38"
+    @revision: 1732
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -24,12 +24,13 @@
 
 //* User Settings
 integer Age = 50; //* life in seconds, seconds = life*interval
+float Shock=25; //* power to push the target object on collide
+
 integer Torpedo=FALSE; //* or FALSE for rocket, it can go out of water, Terpodo dose not targets any object over water
 string Grenade = "CannonBall"; //* special object to shoot aginst target on explode
 integer GrenadeCount = 2; //* How many?
 
 float WaterOffset = 0.1; //* if you want torpedo pull his face out of water a little
-float Shock=15; //* power to push the target object on collide
 float Interval = 0.1;
 integer Targeting = 0; //* who we will targeting? select from bellow
 
@@ -40,10 +41,10 @@ integer TARGET_SCRIPTED = 2;  //* physic and scripted objects
 //*------------------------------------------
 float SpeedFactor = 1; //* multiply with Velocity
 float InitVelocity = 2; //* low to make it stable first
-float Velocity = 4; //* normal speed
+float Velocity = 3; //* normal speed
 
 float NearbyDistance = 10;//* meters, to start push directly to the target
-float NearbyVelocity = 4; //* once when the close to the target
+float NearbyVelocity = 5; //* once when the close to the target
 
 float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
 
@@ -304,6 +305,7 @@ push(float vel)
         list details = llGetObjectDetails(target, [OBJECT_POS, OBJECT_VELOCITY]);
         vector target_pos = llList2Vector(details, 0);
         vector target_vel = llList2Vector(details, 1);
+        //float target_speed = llVecMag(target_vel); //* meter per seconds
         float dist = llFabs(llVecDist(target_pos, pos));
         if ((ProximityHit>0) && (dist < ProximityHit))
         {
@@ -321,7 +323,7 @@ push(float vel)
     if (push_it)
     {
         v =  v * vel * mass;
-        //llSetForce(v, TRUE);
+        //llSetForce(v, TRUE); //* idk why
         llApplyImpulse(v, TRUE);
     }
 }
