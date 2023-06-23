@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-23 16:09:46"
-    @revision: 1745
+    @updated: "2023-06-23 20:26:57"
+    @revision: 1748
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -267,7 +267,6 @@ targetObject(key k)
     {
         lock(k);
         follow();
-        skip = 1;
         llSetTimerEvent(Interval);//* make sure next push after 1 second
     }
 }
@@ -276,7 +275,6 @@ integer stateTorpedo = FALSE;
 float launchedTime = 0;
 vector oldPos; //* for testing only to return back to original pos
 rotation oldRot;
-integer skip = 0;
 float factor;
 float life; //* same as Life above but local value
 
@@ -492,7 +490,7 @@ key getAviKey(string avi_name)
 
 getMessage(string message)
 {
-    string targetTo = "target ";
+    string targetTo = "/target ";
 
     if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
     {
@@ -643,6 +641,14 @@ default
         }
     }
 
+    listen(integer channel, string name, key id, string message)
+    {
+       if (((channel == 0) && (id == llGetOwner())) || ((channel == channel_number) && (llGetOwnerKey(id) == llGetOwner())))
+        {
+            getMessage(llStringTrim(message, STRING_TRIM));
+        }
+    }
+
     timer()
     {
         //float speed = llVecMag(llGetVel()); //* meter per seconds
@@ -654,58 +660,41 @@ default
         }
         else
         {
-            if (skip > 0)
+            if (!stateTorpedo) //* first pulse, we skipped first one to let torpedo get good position after launch
             {
-                skip--;
-                if (target!=NULL_KEY)
-                    follow();
-            }
-            else
-            {
-                if (!stateTorpedo) //* first pulse, we skipped first one to let torpedo get good position after launch
+                llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
+                if (target==NULL_KEY)
                 {
-                    llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
-                    if (target==NULL_KEY)
+                     if (llGetStartParameter() <= 1) //* if launched without target command
+                        sence();
+                    else
                     {
-                         if (llGetStartParameter() <= 1) //* if launched without target command
-                            sence();
-                        else
+                        //* not working in on_rez :(
+                        channel_number = getChannel();
+                        if (listen_handle == 0)
                         {
-                            //* not working in on_rez :(
-                            channel_number = getChannel();
-                            if (listen_handle == 0)
-                            {
-                                listen_handle = llListen(channel_number, "", NULL_KEY, "");
-                            }
+                            listen_handle = llListen(channel_number, "", NULL_KEY, "");
                         }
                     }
                 }
-
-                if (target!=NULL_KEY)
-                    follow();
-
-                float vel  = Velocity;
-/*
-                if (target!=NULL_KEY)
-                {
-                    vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-                    float dist = llFabs(llVecDist(target_pos, llGetPos()));
-
-                    if (dist < NearbyDistance)
-                        vel = LowVelocity;
-                }
-*/
-                push(vel);
-                stateTorpedo = TRUE;
             }
-        }
-    }
 
-    listen(integer channel, string name, key id, string message)
-    {
-       if (((channel == 0) && (id == llGetOwner())) || ((channel == channel_number) && (llGetOwnerKey(id) == llGetOwner())))
-        {
-            getMessage(llStringTrim(message, STRING_TRIM));
+            if (target!=NULL_KEY)
+                follow();
+
+            float vel  = Velocity;
+/*
+            if (target!=NULL_KEY)
+            {
+                vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
+                float dist = llFabs(llVecDist(target_pos, llGetPos()));
+
+                if (dist < NearbyDistance)
+                    vel = LowVelocity;
+            }
+*/
+            push(vel);
+            stateTorpedo = TRUE;
         }
     }
 }
