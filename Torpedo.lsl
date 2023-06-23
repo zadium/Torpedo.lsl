@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-20 22:24:38"
-    @revision: 1732
+    @updated: "2023-06-23 16:09:46"
+    @revision: 1745
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -336,7 +336,7 @@ sence()
     else if (Targeting==TARGET_SCRIPTED)
         flags = ACTIVE | SCRIPTED;
 
-    llSensorRepeat("", NULL_KEY, flags, SensorRange, 2 * PI, 1);
+    llSensorRepeat("", NULL_KEY, flags, SensorRange, PI, 1);
 }
 
 burst()
@@ -535,6 +535,7 @@ default
         init();
         stateTorpedo = FALSE;
         launchedTime = 0;
+        channel_number = getChannel();
         llStopSound();
         llListen(0, "", llGetOwner(), "");
     }
@@ -666,12 +667,16 @@ default
                     llSetStatus(STATUS_ROTATE_Z | STATUS_ROTATE_Y, TRUE); //* now allow to turn left or right
                     if (target==NULL_KEY)
                     {
-                        sence();
-                        //* not working in on_rez :(
-                        channel_number = getChannel();
-                        if (listen_handle == 0)
+                         if (llGetStartParameter() <= 1) //* if launched without target command
+                            sence();
+                        else
                         {
-                            listen_handle = llListen(channel_number, "", NULL_KEY, "");
+                            //* not working in on_rez :(
+                            channel_number = getChannel();
+                            if (listen_handle == 0)
+                            {
+                                listen_handle = llListen(channel_number, "", NULL_KEY, "");
+                            }
                         }
                     }
                 }

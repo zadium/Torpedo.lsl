@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.10
-    @updated: "2023-06-20 22:28:26"
-    @revision: 255
+    @updated: "2023-06-23 16:12:59"
+    @revision: 274
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -21,6 +21,10 @@ integer channel_private_number = 5746;
 
 integer channel_number = 0;
 string target_message = "";
+
+float SensorRange = 100;
+integer target_owner = TRUE;
+float LaunchLife = 50;
 
 integer getChannel()
 {
@@ -77,7 +81,24 @@ launch(string message)
     }
 
     power = llVecNorm(llRot2Euler(rot));
-    llRezObject(name, pos, power, rot, 1); //* do not pass 0
+    integer number = 1; //* auto target
+    if (target_message !="")
+        number = 2; //* wait for message
+    llRezObject(name, pos, power, rot, number); //* do not pass 0
+}
+
+key getRoot(key k)
+{
+    if (k==NULL_KEY)
+        return k;
+    else
+    {
+        key root = llList2Key(llGetObjectDetails(k, [OBJECT_ROOT]), 0);
+        if (root != NULL_KEY)
+            return root;
+        else
+            return k;
+    }
 }
 
 default
@@ -86,6 +107,10 @@ default
     {
         channel_number = getChannel();
         llListen(0, "", llGetOwner(), "");
+        if (!llGetAttached())
+        {
+            llSensorRepeat("", NULL_KEY, AGENT, SensorRange, PI, 1);
+        }
     }
 
     on_rez(integer number)
@@ -109,9 +134,42 @@ default
         {
             if (target_message == "")
             {
+                llSensorRemove();
+                llSetTimerEvent(LaunchLife);
                 launch("");
             }
         }
+    }
+
+    sensor( integer number_detected )
+    {
+        while (number_detected>0)
+        {
+            number_detected--;
+            key k = llDetectedKey(number_detected);
+            key owner = llList2Key(llGetObjectDetails(k, [OBJECT_OWNER]), 0);
+            key target = NULL_KEY;
+            if (target_owner || (owner != llGetOwner()))
+            {
+                integer info = llGetAgentInfo(k);
+                if (info & AGENT_ON_OBJECT)
+                    target = getRoot(k);
+
+                if (target!=NULL_KEY)
+                {
+                    llSensorRemove();
+                    llSetTimerEvent(LaunchLife);
+                    launch("target " + llKey2Name(k)+",3,"+(string)LaunchLife);
+                    return;
+                }
+            }
+        }
+    }
+
+    timer()
+     {
+         llSetTimerEvent(0);
+        llSensorRepeat("", NULL_KEY, AGENT, SensorRange, PI, 1);
     }
 
     listen(integer channel, string name, key id, string message)
@@ -124,6 +182,8 @@ default
 
                 if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
                 {
+                    llSensorRemove();
+                    llSetTimerEvent(LaunchLife);
                     launch(message);
                 }
             }

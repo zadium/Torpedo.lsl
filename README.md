@@ -32,9 +32,11 @@ Missile or launcher listen to chat for command, say target name of avatar to lau
 
 Create Mesh
 
-## Textures
+## Resources
 
 https://www.sketchuptextureclub.com/
+
+https://www.101soundboards.com/search/missile
 
 
 # Source
