@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 1.10
-    @updated: "2023-06-23 16:12:59"
-    @revision: 274
+    @updated: "2023-06-23 20:24:25"
+    @revision: 281
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -40,6 +40,7 @@ playsoundLaunch()
 
 launch(string message)
 {
+    llSensorRemove();
     playsoundLaunch();
 
     vector pos;
@@ -85,6 +86,7 @@ launch(string message)
     if (target_message !="")
         number = 2; //* wait for message
     llRezObject(name, pos, power, rot, number); //* do not pass 0
+    llSetTimerEvent(LaunchLife); //* to reenable sensor again
 }
 
 key getRoot(key k)
@@ -134,8 +136,6 @@ default
         {
             if (target_message == "")
             {
-                llSensorRemove();
-                llSetTimerEvent(LaunchLife);
                 launch("");
             }
         }
@@ -157,9 +157,7 @@ default
 
                 if (target!=NULL_KEY)
                 {
-                    llSensorRemove();
-                    llSetTimerEvent(LaunchLife);
-                    launch("target " + llKey2Name(k)+",3,"+(string)LaunchLife);
+                    launch("/target " + llKey2Name(k)+",3,"+(string)LaunchLife);
                     return;
                 }
             }
@@ -167,8 +165,8 @@ default
     }
 
     timer()
-     {
-         llSetTimerEvent(0);
+    {
+        llSetTimerEvent(0);
         llSensorRepeat("", NULL_KEY, AGENT, SensorRange, PI, 1);
     }
 
@@ -178,12 +176,10 @@ default
         {
             if (target_message == "")
             {
-                string targetTo = "target ";
+                string targetTo = "/target ";
 
                 if (llGetSubString(llToLower(message), 0, llStringLength(targetTo)-1) == targetTo)
                 {
-                    llSensorRemove();
-                    llSetTimerEvent(LaunchLife);
                     launch(message);
                 }
             }
