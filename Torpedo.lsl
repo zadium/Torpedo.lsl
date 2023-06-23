@@ -4,8 +4,8 @@
 
     @author: Zai Dium
     @version: 2.10
-    @updated: "2023-06-23 20:26:57"
-    @revision: 1748
+    @updated: "2023-06-23 22:28:15"
+    @revision: 1781
     @localfile: ?defaultpath\Torpedo\?@name.lsl
     @source: https://github.com/zadium/Torpedo.lsl
     @license: MIT
@@ -44,7 +44,7 @@ float InitVelocity = 2; //* low to make it stable first
 float Velocity = 3; //* normal speed
 
 float NearbyDistance = 10;//* meters, to start push directly to the target
-float NearbyVelocity = 5; //* once when the close to the target
+float NearbyVelocity = 6; //* once when the close to the target
 
 float ProximityHit = 5; //* Hit the target if reached this distance, disabled if 0
 
@@ -187,6 +187,7 @@ stop(integer explode_it, integer hit_it)
         llDie();
 }
 
+//* get the pos of object, but if it torpedo, get the bottom of ship
 vector getPos(key k)
 {
     vector target_pos = llList2Vector(llGetObjectDetails(k, [OBJECT_POS]), 0);
@@ -280,8 +281,6 @@ float life; //* same as Life above but local value
 
 push(float vel)
 {
-    vel = vel * factor;
-    vector v;
     vector pos = llGetPos();
     float mass =llGetMass();
 
@@ -294,17 +293,21 @@ push(float vel)
         }
     }
 
-    v = <0, 0, 1>;
-
     integer push_it = TRUE;
+
+    list details = llGetObjectDetails(target, [OBJECT_POS, OBJECT_VELOCITY]);
+    vector target_pos = llList2Vector(details, 0);
+    vector target_vel = llList2Vector(details, 1);
+    float target_speed = llVecMag(target_vel); //* meter per seconds
+    float speed = llVecMag(llGetVel()); //* meter per seconds
+    vector vec;
 
     if (target != NULL_KEY)
     {
-        list details = llGetObjectDetails(target, [OBJECT_POS, OBJECT_VELOCITY]);
-        vector target_pos = llList2Vector(details, 0);
-        vector target_vel = llList2Vector(details, 1);
-        //float target_speed = llVecMag(target_vel); //* meter per seconds
+
+        //llOwnerSay("vel: " + (string)llVecMag(llGetVel())+"  target: " + (string)llVecMag(target_vel));
         float dist = llFabs(llVecDist(target_pos, pos));
+
         if ((ProximityHit>0) && (dist < ProximityHit))
         {
             stop(TRUE, TRUE);
@@ -312,7 +315,13 @@ push(float vel)
         else if (dist < NearbyDistance)
         {
             target_pos = target_pos + target_vel * Interval;
-            vector vec = llVecNorm(target_pos - pos) * mass * NearbyVelocity * factor; //* convert it to power
+            vec = llVecNorm(target_pos - pos) * mass * NearbyVelocity * factor; //* convert it to power
+            /*
+            if (speed<=0)
+                vec = llVecNorm(target_pos - pos) * mass * NearbyVelocity * factor; //* convert it to power
+            else
+                vec = llVecNorm(target_pos - pos) * mass * NearbyVelocity * ((target_speed/speed) * 2) * factor;
+            */
             llApplyImpulse(vec, FALSE);
             push_it = FALSE;
         }
@@ -320,9 +329,16 @@ push(float vel)
 
     if (push_it)
     {
-        v =  v * vel * mass;
+        vec = <0, 0, 1> * mass * vel * factor; //* forward only
         //llSetForce(v, TRUE); //* idk why
-        llApplyImpulse(v, TRUE);
+        //llApplyImpulse(llVecNorm(target_pos - pos) * mass * target_speed * factor, FALSE);
+        /*
+        if (speed<=0)
+            vec = v * mass * vel * factor; //* convert it to power
+        else
+            vec = v * mass * vel * ((target_speed/speed) * 2) * factor;
+        */
+        llApplyImpulse(vec, TRUE);
     }
 }
 
@@ -683,17 +699,8 @@ default
                 follow();
 
             float vel  = Velocity;
-/*
-            if (target!=NULL_KEY)
-            {
-                vector target_pos = llList2Vector(llGetObjectDetails(target, [OBJECT_POS]), 0);
-                float dist = llFabs(llVecDist(target_pos, llGetPos()));
-
-                if (dist < NearbyDistance)
-                    vel = LowVelocity;
-            }
-*/
             push(vel);
+
             stateTorpedo = TRUE;
         }
     }
